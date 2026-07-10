@@ -43,15 +43,29 @@ This document serves as the absolute source of truth for the project's current s
 - Built the **Employee Directory UI** and **Employee Profile Modal** for admins to manage Designations, Departments, Date of Joining, and Managers.
 - Handled frontend relational joining for `user_profiles` to bypass Supabase schema cache limitations.
 
+### Module 7 to 15: Core Operational Modules
+- Built comprehensive modules for **Attendance**, **Payroll**, **Performance Reviews**, **Finances**, and **Analytics**.
+- Each module has dedicated database schemas, RLS policies, and extensive React UI containers.
+
+### Module 17: Marketplace (App Store)
+- Implemented an internal App Store for Organization Admins to discover, activate, and deactivate modular features.
+- Wired global state to dynamically filter the sidebar navigation based on which modules are active for the tenant.
+
+### Architecture Redesign: Multi-Tenant Subdomain Routing
+- Transformed the app into an enterprise multi-tenant structure.
+- **Main Domain**: (`crewly.com` / `localhost:5173`) is strictly reserved for marketing, creating new workspaces (Orgs), and Admin logins.
+- **Tenant Domain**: Each organization has a unique `slug`. Employees log in at `company.crewly.com` (or `http://[slug].localhost:5173` locally).
+- **Direct Employee Creation**: Admins bypass the standard email invite link system and create employees directly from the Directory using a secure `SECURITY DEFINER` Postgres RPC. Temporary passwords are automatically generated and emailed to the user.
+- **Resend Integration**: Integrated the Resend Email API directly to trigger onboarding emails containing the tenant URL and credentials.
+
 ---
 
 ## 🚧 What to do next (Next Session)
 
 When resuming the project, the AI should:
-1. **Review the Blueprint:** Determine the exact specifications for **Module 7**. (Typically, the next logical steps after Core HR are Leave Management, Attendance Tracking, or Payroll).
-2. **Expand HR Features (If required):** Add any custom HR fields (e.g., Blood Group, Emergency Contacts, Location) that the user might specify based on their blueprint.
-3. **Automated Testing & Edge Cases:** Ensure edge cases around role demotions or organization deletion are strictly handled.
-4. **Billing / SaaS Subscriptions:** If the blueprint calls for it, integrate Stripe/LemonSqueezy for tenant billing tied to the `organizations` table.
+1. Review the progress to date.
+2. Determine the next feature or module to build based on the user's commands.
+3. Keep refining the Tenant Subdomain routing and consider building out tenant-specific branding settings (e.g. primary color overrides).
 
 ## 📝 Important Notes for AI
 - **DO NOT** use inline `grep` or `cat` in bash. Always use the built-in specific tools (`grep_search`, `read_file`, `write_to_file`).

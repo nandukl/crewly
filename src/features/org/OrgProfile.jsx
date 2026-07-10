@@ -5,6 +5,7 @@ import * as z from 'zod';
 import { orgService } from '../../lib/orgService';
 import { useOrg } from './OrgContext';
 import { Button } from '../../components/ui/Button';
+import { Input } from '../../components/ui/Input';
 import { FileUploader } from '../storage/FileUploader';
 import { OrgLogo } from './OrgLogo';
 import en from '../../locales/en.json';
@@ -46,6 +47,9 @@ export const OrgProfile = () => {
   }, [activeOrganization, reset]);
 
   const canEdit = currentMembership?.role === 'owner' || currentMembership?.role === 'org_admin';
+  const logoUrl = watch('logo_url');
+  const orgName = watch('name');
+  const orgSlug = watch('slug');
 
   const onSubmit = async (data) => {
     if (!canEdit) return;
@@ -57,6 +61,7 @@ export const OrgProfile = () => {
       await refreshOrganizations();
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
+      reset(data); // reset to clear isDirty
     } catch (err) {
       setError(err.message);
     } finally {
@@ -67,109 +72,151 @@ export const OrgProfile = () => {
   if (!activeOrganization) return <div>Loading...</div>;
 
   return (
-    <div className="max-w-3xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-      <div className="bg-white shadow sm:rounded-lg">
-        <div className="px-4 py-5 sm:p-6">
-          <h3 className="text-lg leading-6 font-medium text-slate-900">{t.title}</h3>
-          
-          {error && <div className="mt-4 p-3 text-sm text-red-700 bg-red-100 rounded-md">{error}</div>}
-          {success && <div className="mt-4 p-3 text-sm text-green-700 bg-green-100 rounded-md">{t.successMessage}</div>}
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-lg">
+      
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row justify-between items-end gap-lg mb-xl">
+        <div className="space-y-xs">
+          <h1 className="font-headline-lg text-headline-lg text-on-surface">Organization Settings</h1>
+          <p className="font-body-lg text-body-lg text-on-surface-variant">Update your workspace brand and fundamental core identity.</p>
+        </div>
+        {canEdit && (
+          <div className="flex gap-md">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => reset()}
+              disabled={!isDirty || loading}
+            >
+              Discard Changes
+            </Button>
+            <Button 
+              type="submit" 
+              disabled={!isDirty || loading}
+              isLoading={loading}
+            >
+              Save Changes
+            </Button>
+          </div>
+        )}
+      </div>
 
-          <form className="mt-5 space-y-6" onSubmit={handleSubmit(onSubmit)}>
-            <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
-              <div className="sm:col-span-4">
-                <label htmlFor="name" className="block text-sm font-medium text-slate-700">{t.nameLabel}</label>
-                <div className="mt-1">
-                  <input type="text" {...register('name')} disabled={!canEdit} className="block w-full border-slate-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm disabled:bg-slate-50" />
-                  {errors.name && <p className="mt-2 text-sm text-red-600">{errors.name.message}</p>}
-                </div>
+      {error && <div className="p-3 text-sm text-error bg-error-container rounded-md">{error}</div>}
+      {success && <div className="p-3 text-sm text-green-700 bg-green-100 rounded-md">{t.successMessage}</div>}
+
+      {/* Content Grid */}
+      <div className="grid grid-cols-12 gap-lg">
+        {/* Main Form Card */}
+        <div className="col-span-12 max-w-4xl">
+          <div className="bg-surface-container-lowest rounded-xl border border-outline-variant p-xl shadow-sm">
+            <h2 className="font-title-lg text-title-lg text-on-surface mb-lg flex items-center gap-sm">
+              <span className="material-symbols-outlined text-secondary">business</span>
+              Organization Profile
+            </h2>
+            
+            <div className="space-y-xl">
+              {/* Name Field */}
+              <div className="space-y-sm">
+                <label className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">{t.nameLabel}</label>
+                <input 
+                  type="text" 
+                  {...register('name')} 
+                  disabled={!canEdit} 
+                  placeholder="e.g. VELTECH"
+                  className="w-full h-12 px-md border border-outline-variant rounded-lg focus-ring font-body-md text-on-surface disabled:bg-surface-container-low" 
+                />
+                {errors.name && <p className="mt-1 text-xs text-error">{errors.name.message}</p>}
               </div>
 
-              <div className="sm:col-span-4">
-                <label htmlFor="slug" className="block text-sm font-medium text-slate-700">{t.slugLabel}</label>
-                <div className="mt-1 flex rounded-md shadow-sm">
-                  <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-slate-300 bg-slate-50 text-slate-500 sm:text-sm">
+              {/* Slug Field */}
+              <div className="space-y-sm">
+                <label className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">{t.slugLabel}</label>
+                <div className="relative flex items-center">
+                  <div className="absolute left-0 h-full px-md flex items-center bg-surface-container border-r border-outline-variant rounded-l-lg text-on-surface-variant font-label-md">
                     crewly.app/
-                  </span>
-                  <input type="text" {...register('slug')} disabled={!canEdit} className="flex-1 block w-full border-slate-300 rounded-none rounded-r-md focus:ring-primary focus:border-primary sm:text-sm disabled:bg-slate-50" />
+                  </div>
+                  <input 
+                    type="text" 
+                    {...register('slug')} 
+                    disabled={!canEdit} 
+                    className="w-full h-12 pl-[110px] pr-md border border-outline-variant rounded-lg focus-ring font-body-md text-on-surface disabled:bg-surface-container-low" 
+                  />
                 </div>
-                {errors.slug && <p className="mt-2 text-sm text-red-600">{errors.slug.message}</p>}
+                {errors.slug && <p className="mt-1 text-xs text-error">{errors.slug.message}</p>}
               </div>
 
-              <div className="sm:col-span-6">
-                <label className="block text-sm font-medium text-slate-700 mb-2">{t.logoUrlLabel}</label>
+              {/* Logo Section */}
+              <div className="space-y-sm pt-md">
+                <label className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Logo URL</label>
                 
-                {watch('logo_url') && (
-                  <div className="mb-4 flex items-center gap-4">
-                    <OrgLogo logoUrl={watch('logo_url')} className="h-24 w-24 object-cover rounded-full shadow-sm" />
-                    <span className="text-sm text-slate-500 font-medium">Current Logo</span>
+                {logoUrl && (
+                  <div className="flex items-center gap-lg p-md border border-outline-variant rounded-lg bg-surface-container-low">
+                    <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-white shadow-sm flex-shrink-0">
+                      <OrgLogo logoUrl={logoUrl} className="w-full h-full object-cover" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="font-label-md text-label-md font-bold text-on-surface">Current Logo</span>
+                      <span className="text-xs text-on-surface-variant">Round seal brandmark</span>
+                    </div>
+                    {canEdit && (
+                      <button 
+                        type="button"
+                        onClick={() => setValue('logo_url', '', { shouldDirty: true })}
+                        className="ml-auto text-error font-label-md hover:underline"
+                      >
+                        Remove
+                      </button>
+                    )}
                   </div>
                 )}
 
-                {canEdit ? (
-                  <FileUploader 
-                    orgId={activeOrganization.id} 
-                    featureName="logos" 
-                    accept="image/*"
-                    onUploadComplete={(data) => {
-                      setValue('logo_url', data.file_path, { shouldDirty: true });
-                    }}
-                  />
-                ) : null}
-                <div className="mt-2">
-                  <input type="text" {...register('logo_url')} readOnly className="block w-full border-slate-300 rounded-md shadow-sm bg-slate-50 text-slate-500 sm:text-sm" placeholder="Upload a logo to generate path..." />
-                  {errors.logo_url && <p className="mt-2 text-sm text-red-600">{errors.logo_url.message}</p>}
-                </div>
-              </div>
-
-              <div className="sm:col-span-3">
-                <label htmlFor="industry" className="block text-sm font-medium text-slate-700">{t.industryLabel}</label>
-                <div className="mt-1">
-                  <input type="text" {...register('industry')} disabled={!canEdit} className="block w-full border-slate-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm disabled:bg-slate-50" />
-                </div>
-              </div>
-
-              <div className="sm:col-span-3">
-                <label htmlFor="size" className="block text-sm font-medium text-slate-700">{t.sizeLabel}</label>
-                <div className="mt-1">
-                  <input type="text" {...register('size')} disabled={!canEdit} className="block w-full border-slate-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm disabled:bg-slate-50" />
-                </div>
+                {canEdit && (
+                  <div className="mt-md">
+                    <FileUploader 
+                      orgId={activeOrganization.id} 
+                      featureName="logos" 
+                      accept="image/*"
+                      onUploadComplete={(data) => {
+                        setValue('logo_url', data.file_path, { shouldDirty: true });
+                      }}
+                    />
+                    <input 
+                      type="hidden" 
+                      {...register('logo_url')} 
+                    />
+                  </div>
+                )}
               </div>
               
-              <div className="sm:col-span-2">
-                <label htmlFor="locale" className="block text-sm font-medium text-slate-700">{t.localeLabel}</label>
-                <div className="mt-1">
-                  <input type="text" {...register('locale')} disabled={!canEdit} placeholder="e.g. en-US" className="block w-full border-slate-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm disabled:bg-slate-50" />
+              {/* Other Details Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-md pt-lg border-t border-outline-variant">
+                <Input label={t.industryLabel} {...register('industry')} disabled={!canEdit} />
+                <Input label={t.sizeLabel} {...register('size')} disabled={!canEdit} />
+                <Input label={t.localeLabel} placeholder="e.g. en-US" {...register('locale')} disabled={!canEdit} />
+                <Input label={t.timezoneLabel} placeholder="e.g. UTC" {...register('timezone')} disabled={!canEdit} />
+                <div className="col-span-1 md:col-span-2 space-y-sm">
+                  <label className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">{t.currencyLabel}</label>
+                  <select 
+                    {...register('currency')} 
+                    disabled={!canEdit}
+                    className="w-full h-12 px-md border border-outline-variant rounded-lg focus-ring font-body-md text-on-surface disabled:bg-surface-container-low"
+                  >
+                    <option value="USD">USD - US Dollar ($)</option>
+                    <option value="EUR">EUR - Euro (€)</option>
+                    <option value="GBP">GBP - British Pound (£)</option>
+                    <option value="INR">INR - Indian Rupee (₹)</option>
+                    <option value="AUD">AUD - Australian Dollar (A$)</option>
+                    <option value="CAD">CAD - Canadian Dollar (C$)</option>
+                    <option value="SGD">SGD - Singapore Dollar (S$)</option>
+                    <option value="AED">AED - UAE Dirham</option>
+                  </select>
                 </div>
               </div>
 
-              <div className="sm:col-span-2">
-                <label htmlFor="timezone" className="block text-sm font-medium text-slate-700">{t.timezoneLabel}</label>
-                <div className="mt-1">
-                  <input type="text" {...register('timezone')} disabled={!canEdit} placeholder="e.g. UTC" className="block w-full border-slate-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm disabled:bg-slate-50" />
-                </div>
-              </div>
-
-              <div className="sm:col-span-2">
-                <label htmlFor="currency" className="block text-sm font-medium text-slate-700">{t.currencyLabel}</label>
-                <div className="mt-1">
-                  <input type="text" {...register('currency')} disabled={!canEdit} placeholder="e.g. USD" className="block w-full border-slate-300 rounded-md shadow-sm focus:ring-primary focus:border-primary sm:text-sm disabled:bg-slate-50" />
-                </div>
-              </div>
             </div>
-            
-            {canEdit && (
-              <div className="pt-5">
-                <div className="flex justify-end">
-                  <Button type="submit" disabled={!isDirty || loading}>
-                    {loading ? 'Saving...' : t.saveButton}
-                  </Button>
-                </div>
-              </div>
-            )}
-          </form>
+          </div>
         </div>
       </div>
-    </div>
+    </form>
   );
 };

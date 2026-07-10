@@ -1,0 +1,372 @@
+<!DOCTYPE html><html class="light" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Organization Settings | Crewly</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Geist:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
+        
+        .focus-ring:focus {
+            outline: none;
+            border-color: #0051d5;
+            box-shadow: 0 0 0 2px rgba(0, 81, 213, 0.1);
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary": "#000000",
+                        "on-background": "#0b1c30",
+                        "primary-fixed": "#dae2fd",
+                        "outline-variant": "#c6c6cd",
+                        "outline": "#76777d",
+                        "on-primary-container": "#7c839b",
+                        "background": "#f8f9ff",
+                        "tertiary": "#000000",
+                        "on-secondary-container": "#fefcff",
+                        "surface-container-high": "#dce9ff",
+                        "surface-variant": "#d3e4fe",
+                        "surface-tint": "#565e74",
+                        "on-surface-variant": "#45464d",
+                        "surface-container-highest": "#d3e4fe",
+                        "secondary": "#0051d5",
+                        "inverse-on-surface": "#eaf1ff",
+                        "on-tertiary-fixed": "#23005c",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-fixed-dim": "#bec6e0",
+                        "on-tertiary": "#ffffff",
+                        "on-tertiary-container": "#9466ff",
+                        "on-secondary": "#ffffff",
+                        "tertiary-fixed-dim": "#d0bcff",
+                        "on-secondary-fixed": "#00174b",
+                        "on-tertiary-fixed-variant": "#5516be",
+                        "on-error-container": "#93000a",
+                        "error-container": "#ffdad6",
+                        "tertiary-fixed": "#e9ddff",
+                        "primary-container": "#131b2e",
+                        "on-surface": "#0b1c30",
+                        "tertiary-container": "#23005c",
+                        "surface": "#f8f9ff",
+                        "surface-dim": "#cbdbf5",
+                        "surface-bright": "#f8f9ff",
+                        "on-secondary-fixed-variant": "#003ea8",
+                        "inverse-surface": "#213145",
+                        "on-primary-fixed-variant": "#3f465c",
+                        "error": "#ba1a1a",
+                        "on-error": "#ffffff",
+                        "surface-container-low": "#eff4ff",
+                        "surface-container": "#e5eeff",
+                        "secondary-fixed": "#dbe1ff",
+                        "secondary-container": "#316bf3",
+                        "on-primary-fixed": "#131b2e",
+                        "on-primary": "#ffffff",
+                        "inverse-primary": "#bec6e0",
+                        "secondary-fixed-dim": "#b4c5ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "container-max": "1440px",
+                        "xl": "32px",
+                        "xs": "4px",
+                        "base": "4px",
+                        "md": "16px",
+                        "2xl": "48px",
+                        "lg": "24px",
+                        "3xl": "64px",
+                        "gutter": "24px",
+                        "sm": "8px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Inter"],
+                        "label-md": ["Geist"],
+                        "headline-lg-mobile": ["Geist"],
+                        "headline-md": ["Geist"],
+                        "display-lg": ["Geist"],
+                        "body-md": ["Inter"],
+                        "code-sm": ["Geist"],
+                        "title-lg": ["Inter"],
+                        "headline-lg": ["Geist"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "code-sm": ["13px", { "lineHeight": "18px", "fontWeight": "400" }],
+                        "title-lg": ["18px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600" }]
+                    }
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-surface font-body-md text-on-surface overflow-x-hidden">
+<!-- TopNavBar -->
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-gutter h-[48px] bg-surface-container-lowest dark:bg-inverse-surface border-b border-outline-variant dark:border-outline">
+<div class="flex items-center gap-md">
+<span class="font-headline-md text-headline-md font-bold text-on-surface dark:text-inverse-on-surface">Crewly</span>
+<div class="hidden md:flex ml-xl gap-lg">
+<nav class="flex gap-md h-full">
+<a class="font-label-md text-label-md flex items-center px-sm text-secondary font-bold border-b-2 border-secondary h-[48px]" href="#">Organization</a>
+<a class="font-label-md text-label-md flex items-center px-sm text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-high transition-colors h-[48px]" href="#">Resources</a>
+<a class="font-label-md text-label-md flex items-center px-sm text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-high transition-colors h-[48px]" href="#">Network</a>
+</nav>
+</div>
+</div>
+<div class="flex items-center gap-md">
+<div class="relative flex items-center bg-surface-container rounded-lg px-sm py-1 mr-md border border-outline-variant">
+<span class="material-symbols-outlined text-outline text-[18px]">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-body-md placeholder:text-outline-variant w-48" placeholder="Search Org Nodes..." type="text">
+</div>
+<div class="flex items-center gap-sm text-secondary">
+<button class="p-xs hover:bg-surface-container-high rounded-full transition-colors"><span class="material-symbols-outlined">smart_toy</span></button>
+<button class="p-xs hover:bg-surface-container-high rounded-full transition-colors"><span class="material-symbols-outlined">notifications</span></button>
+<button class="p-xs hover:bg-surface-container-high rounded-full transition-colors"><span class="material-symbols-outlined">account_circle</span></button>
+</div>
+</div>
+</header>
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-[48px] h-[calc(100vh-48px)] w-[240px] z-40 flex flex-col pb-md bg-surface dark:bg-on-primary-fixed border-r border-outline-variant dark:border-outline">
+<div class="p-md flex items-center gap-sm border-b border-outline-variant">
+<div class="w-10 h-10 rounded bg-secondary-container flex items-center justify-center text-on-secondary-container">
+<span class="material-symbols-outlined">domain</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md font-bold text-on-surface">VELTECH</span>
+<span class="text-[10px] text-on-surface-variant uppercase tracking-widest">Enterprise Tier</span>
+</div>
+<span class="material-symbols-outlined ml-auto text-outline-variant">expand_more</span>
+</div>
+<nav class="mt-md flex-grow space-y-1 px-sm">
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-container-low transition-all" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-container-low transition-all" href="#">
+<span class="material-symbols-outlined">contacts</span>
+<span class="font-label-md text-label-md">CRM</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-container-low transition-all" href="#">
+<span class="material-symbols-outlined">groups</span>
+<span class="font-label-md text-label-md">Employee Mgmt</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-container-low transition-all" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span class="font-label-md text-label-md">Finance</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-container-low transition-all" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-label-md text-label-md">Analytics</span>
+</a>
+</nav>
+<div class="px-md mt-auto pt-md border-t border-outline-variant">
+<a class="flex items-center gap-md px-md py-sm rounded-lg bg-secondary-container text-on-secondary-container border-l-4 border-secondary font-semibold transition-all scale-[0.98]" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:bg-surface-container rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">help</span>
+<span class="font-label-md text-label-md">Help Center</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="ml-[240px] mt-[48px] min-h-[calc(100vh-48px)] flex flex-col">
+<!-- Secondary Tab Navigation -->
+<div class="sticky top-[48px] z-30 bg-surface border-b border-outline-variant px-xl">
+<nav class="flex gap-xl overflow-x-auto hide-scrollbar">
+<a class="py-lg text-secondary font-bold border-b-2 border-secondary whitespace-nowrap font-label-md" href="#">General</a>
+<a class="py-lg text-on-surface-variant hover:text-on-surface transition-colors whitespace-nowrap font-label-md" href="#">Directory</a>
+<a class="py-lg text-on-surface-variant hover:text-on-surface transition-colors whitespace-nowrap font-label-md" href="#">Attendance</a>
+<a class="py-lg text-on-surface-variant hover:text-on-surface transition-colors whitespace-nowrap font-label-md" href="#">Leave</a>
+<a class="py-lg text-on-surface-variant hover:text-on-surface transition-colors whitespace-nowrap font-label-md" href="#">Access &amp; Invites</a>
+<a class="py-lg text-on-surface-variant hover:text-on-surface transition-colors whitespace-nowrap font-label-md" href="#">Custom Roles</a>
+<a class="py-lg text-on-surface-variant hover:text-on-surface transition-colors whitespace-nowrap font-label-md" href="#">Structure</a>
+<a class="py-lg text-on-surface-variant hover:text-on-surface transition-colors whitespace-nowrap font-label-md" href="#">Audit Logs</a>
+</nav>
+</div>
+<div class="p-xl space-y-lg max-w-container-max mx-auto w-full">
+<!-- Header Section -->
+<div class="flex flex-col md:flex-row justify-between items-end gap-lg mb-xl">
+<div class="space-y-xs">
+<h1 class="font-headline-lg text-headline-lg text-on-surface">Organization Settings</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant">Update your workspace brand and fundamental core identity.</p>
+</div>
+<div class="flex gap-md">
+<button class="flex items-center gap-sm px-lg py-md border border-outline-variant bg-surface-container-lowest rounded-lg hover:bg-surface-container-low transition-colors font-label-md text-label-md">
+                        Discard Changes
+                    </button>
+<button class="flex items-center gap-sm px-lg py-md bg-secondary text-on-secondary rounded-lg hover:opacity-90 transition-opacity font-label-md text-label-md font-bold">
+                        Save Changes
+                    </button>
+</div>
+</div>
+<!-- Content Grid -->
+<div class="grid grid-cols-12 gap-lg">
+<!-- Main Form Card -->
+<div class="col-span-12 lg:col-span-8">
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant p-xl shadow-sm">
+<h2 class="font-title-lg text-title-lg text-on-surface mb-lg flex items-center gap-sm">
+<span class="material-symbols-outlined text-secondary">business</span>
+                            Organization Profile
+                        </h2>
+<form class="space-y-xl">
+<!-- Name Field -->
+<div class="space-y-sm">
+<label class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Name</label>
+<input class="w-full h-12 px-md border border-outline-variant rounded-lg focus-ring font-body-md" placeholder="e.g. VELTECH" type="text" value="VELTECH">
+</div>
+<!-- Slug Field -->
+<div class="space-y-sm">
+<label class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Slug</label>
+<div class="relative flex items-center">
+<div class="absolute left-0 h-full px-md flex items-center bg-surface-container border-r border-outline-variant rounded-l-lg text-on-surface-variant font-label-md">
+                                        crewly.app/
+                                    </div>
+<input class="w-full h-12 pl-[110px] pr-md border border-outline-variant rounded-lg focus-ring font-body-md" type="text" value="veltechkl">
+</div>
+</div>
+<!-- Logo Section -->
+<div class="space-y-sm pt-md">
+<label class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Logo URL</label>
+<div class="flex items-center gap-lg p-md border border-outline-variant rounded-lg bg-surface-container-low">
+<div class="w-16 h-16 rounded-full overflow-hidden border-2 border-white shadow-sm flex-shrink-0">
+<img alt="Current Logo" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDh8xcq4vHxejgDtQD2rFNkEZBz7LMuOgXjBTP8Lt1YsVQ0j6GygFlN_7obgfUwmSeuqPP9h2CHyv_RT6Qy-HINTeNCwpKAZdCt8IA5h6O57K_2-i82zop8iu3FL-XQwy0Nn2NIUX8e_TNGmlWsIh6pukifFgu2Kp_skntpdhcbhEsvFl_xg2yvueqWKT5kb0EwurWsvsuZrS7Goz3iFjm7W14XmK-ED9OcWw58oR7HdtsnJotLxmlatg">
+</div>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md font-bold">Current Logo</span>
+<span class="text-xs text-on-surface-variant">Round seal brandmark</span>
+</div>
+<button class="ml-auto text-error font-label-md hover:underline" type="button">Remove</button>
+</div>
+<!-- Upload Area -->
+<div class="relative group mt-md">
+<div class="w-full border-2 border-dashed border-outline-variant rounded-xl p-3xl flex flex-col items-center justify-center gap-md hover:bg-surface-container-low transition-colors cursor-pointer text-center">
+<div class="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-3xl">add_photo_alternate</span>
+</div>
+<div>
+<p class="font-title-lg text-on-surface">Click or drag to upload logos files</p>
+<p class="text-on-surface-variant font-label-md">Maximum file size 10MB</p>
+</div>
+</div>
+<input class="absolute inset-0 opacity-0 cursor-pointer" type="file">
+</div>
+<p class="text-[10px] text-on-surface-variant font-code-sm truncate">242b22ff-4acd-45c7-8881-043de212ffbe/logos/1783356351126_images__2_.jpg</p>
+</div>
+</form>
+</div>
+</div>
+<!-- Right Column Cards -->
+<div class="col-span-12 lg:col-span-4 space-y-lg">
+<!-- Preview Card -->
+<div class="bg-primary-container text-white p-xl rounded-xl border border-outline-variant shadow-sm relative overflow-hidden">
+<div class="absolute -right-8 -top-8 w-40 h-40 bg-secondary opacity-10 blur-3xl rounded-full"></div>
+<h3 class="font-label-md text-label-md text-on-primary-container uppercase tracking-widest mb-lg">Brand Identity Preview</h3>
+<div class="flex items-center gap-md mb-xl">
+<div class="w-14 h-14 rounded-full bg-white p-0.5 shadow-lg">
+<img alt="Logo Preview" class="w-full h-full rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDh8xcq4vHxejgDtQD2rFNkEZBz7LMuOgXjBTP8Lt1YsVQ0j6GygFlN_7obgfUwmSeuqPP9h2CHyv_RT6Qy-HINTeNCwpKAZdCt8IA5h6O57K_2-i82zop8iu3FL-XQwy0Nn2NIUX8e_TNGmlWsIh6pukifFgu2Kp_skntpdhcbhEsvFl_xg2yvueqWKT5kb0EwurWsvsuZrS7Goz3iFjm7W14XmK-ED9OcWw58oR7HdtsnJotLxmlatg">
+</div>
+<div class="flex flex-col">
+<span class="font-headline-md text-headline-md font-bold leading-tight">VELTECH</span>
+<span class="text-sm text-on-primary-container font-code-sm opacity-80">veltechkl.crewly.app</span>
+</div>
+</div>
+<p class="text-sm opacity-80 leading-relaxed italic border-l-2 border-secondary pl-md">
+                            "This brand profile serves as the visual anchor for all system notifications, employee dashboards, and external networking nodes."
+                        </p>
+</div>
+<!-- AI Assistant Card -->
+<div class="bg-surface-container-lowest border-l-4 border-secondary rounded-xl p-lg shadow-sm border border-outline-variant space-y-md">
+<div class="flex items-center gap-sm text-secondary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+<span class="font-label-md text-label-md font-bold uppercase tracking-wider">Suite Insight</span>
+</div>
+<p class="text-sm text-on-surface-variant leading-relaxed">
+                            "Your workspace slug <strong>veltechkl</strong> is optimal for SEO. I've detected that you haven't set a secondary brand color yet. Would you like me to generate a palette that matches your logo?"
+                        </p>
+<button class="text-secondary font-bold text-xs flex items-center gap-xs hover:underline">
+                            Generate brand palette <span class="material-symbols-outlined text-xs">chevron_right</span>
+</button>
+</div>
+<!-- Guidelines -->
+<div class="bg-surface-container p-lg rounded-xl border border-outline-variant">
+<h4 class="font-label-md text-label-md font-bold text-on-surface-variant mb-sm flex items-center gap-sm">
+<span class="material-symbols-outlined text-lg">info</span>
+                            UPLOAD GUIDELINES
+                        </h4>
+<ul class="text-xs space-y-2 text-on-surface-variant">
+<li class="flex items-start gap-sm">
+<span class="w-1 h-1 rounded-full bg-secondary mt-1.5"></span>
+                                Preferred format: PNG or SVG for transparency.
+                            </li>
+<li class="flex items-start gap-sm">
+<span class="w-1 h-1 rounded-full bg-secondary mt-1.5"></span>
+                                Minimum resolution: 512x512 pixels.
+                            </li>
+<li class="flex items-start gap-sm">
+<span class="w-1 h-1 rounded-full bg-secondary mt-1.5"></span>
+                                Aspect ratio: 1:1 (Square) recommended.
+                            </li>
+</ul>
+</div>
+</div>
+</div>
+<!-- Footer Meta -->
+<footer class="flex justify-between items-center text-[10px] text-on-surface-variant pt-lg border-t border-outline-variant">
+<div class="flex gap-md uppercase tracking-tighter">
+<span class="">BUILD 4.22.01-RC</span>
+<span class="">•</span>
+<span class="">REGION: US-EAST-1</span>
+</div>
+<div class="flex gap-md">
+<a class="hover:text-secondary underline" href="#">Privacy Policy</a>
+<a class="hover:text-secondary underline" href="#">SLA Terms</a>
+</div>
+</footer>
+</div>
+</main>
+<!-- Support Floating Button -->
+<div class="fixed bottom-xl right-xl">
+<button class="w-14 h-14 rounded-full bg-surface-container-lowest border border-outline-variant shadow-lg flex items-center justify-center text-secondary hover:scale-110 transition-transform group">
+<span class="material-symbols-outlined">forum</span>
+<span class="absolute right-full mr-md bg-inverse-surface text-inverse-on-surface px-md py-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity font-label-md pointer-events-none">Support Assistant</span>
+</button>
+</div>
+<script>
+        // Tab interaction
+        const tabs = document.querySelectorAll('.sticky nav a');
+        tabs.forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                e.preventDefault();
+                tabs.forEach(t => {
+                    t.classList.remove('text-secondary', 'font-bold', 'border-b-2', 'border-secondary');
+                    t.classList.add('text-on-surface-variant');
+                });
+                tab.classList.add('text-secondary', 'font-bold', 'border-b-2', 'border-secondary');
+                tab.classList.remove('text-on-surface-variant');
+            });
+        });
+    </script>
+
+
+</body></html>

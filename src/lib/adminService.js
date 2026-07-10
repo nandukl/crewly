@@ -82,5 +82,16 @@ export const adminService = {
       console.error('[AdminService] Error archiving org:', err);
       return { error_code: 'ARCHIVE_FAILED', message: err.message };
     }
+  },
+
+  async getSystemUsers() {
+    try {
+      const { data, error } = await supabase.rpc('get_system_users');
+      if (error) throw error;
+      return { data };
+    } catch (err) {
+      console.error('[AdminService] Error fetching system users:', err);
+      return { error_code: 'FETCH_ERROR', message: err.message, data: [] };
+    }
   }
 };

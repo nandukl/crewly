@@ -26,16 +26,25 @@ export const MFAChallenge = () => {
 
   useEffect(() => {
     const fetchFactor = async () => {
-      const { data: { factors } } = await supabase.auth.mfa.listFactors();
-      const totpFactor = factors.find(f => f.factorType === 'totp' && f.status === 'verified');
-      if (totpFactor) {
-        setFactorId(totpFactor.id);
-      } else {
-        setServerError('No verified MFA factor found.');
+      try {
+        const { data, error } = await supabase.auth.mfa.listFactors();
+        if (error) throw error;
+        
+        const factors = data?.all || [];
+        const totpFactor = factors.find(f => f.factorType === 'totp' && f.status === 'verified');
+        
+        if (totpFactor) {
+          setFactorId(totpFactor.id);
+        } else {
+          // If no verified factor is found, redirect to enrollment
+          navigate('/mfa/enroll');
+        }
+      } catch (err) {
+        setServerError(err.message || 'Failed to fetch MFA factors.');
       }
     };
     fetchFactor();
-  }, []);
+  }, [navigate]);
 
   const onSubmit = async (data) => {
     try {

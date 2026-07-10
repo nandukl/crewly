@@ -2,16 +2,16 @@ import React from 'react';
 
 export const Input = React.forwardRef(({ label, error, ...props }, ref) => {
   return (
-    <div className="flex flex-col space-y-1 w-full">
-      {label && <label className="text-sm font-medium text-slate-700">{label}</label>}
+    <div className="flex flex-col space-y-sm w-full">
+      {label && <label className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">{label}</label>}
       <input
         ref={ref}
-        className={`px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-colors ${
-          error ? 'border-danger focus:ring-danger' : 'border-slate-300'
+        className={`w-full px-md py-[10px] bg-white border rounded-lg font-body-md text-on-surface placeholder:text-on-surface-variant focus:outline-none transition-all focus-ring ${
+          error ? 'border-error focus:ring-error' : 'border-outline-variant'
         }`}
         {...props}
       />
-      {error && <span className="text-xs text-danger mt-1">{error}</span>}
+      {error && <span className="text-xs text-error mt-1">{error}</span>}
     </div>
   );
 });

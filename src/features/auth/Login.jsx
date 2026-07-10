@@ -28,16 +28,10 @@ export const Login = () => {
       setServerError(null);
       await authService.login(data.email, data.password);
       
-      // Check MFA Status
       const mfaStatus = await authService.checkMfaEnrollment();
-      if (mfaStatus.aal.nextLevel === 'aal2') {
-         // User is enrolled in MFA but hasn't verified this session
-         navigate('/mfa/challenge');
-      } else if (mfaStatus.isSuperAdmin && !mfaStatus.isEnrolled) {
-         // Super Admin mandatory MFA enrollment
-         navigate('/mfa/enroll');
+      if (mfaStatus.isSuperAdmin) {
+         navigate('/admin');
       } else {
-         // Proceed to dashboard
          navigate('/dashboard');
       }
     } catch (error) {
@@ -46,10 +40,10 @@ export const Login = () => {
   };
 
   return (
-    <AuthLayout title={t.title}>
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+    <AuthLayout title="Welcome Back">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-lg">
         {serverError && (
-          <div className="p-3 text-sm text-red-700 bg-red-100 rounded-md">
+          <div className="p-3 text-sm text-error bg-error-container rounded-md">
             {serverError}
           </div>
         )}
@@ -59,32 +53,39 @@ export const Login = () => {
           type="email"
           autoComplete="email"
           error={errors.email?.message}
+          placeholder="name@company.com"
           {...register('email')}
         />
 
-        <div>
+        <div className="space-y-1">
           <Input
             label={t.passwordLabel}
             type="password"
             autoComplete="current-password"
             error={errors.password?.message}
+            placeholder="••••••••"
             {...register('password')}
           />
-          <div className="flex justify-end mt-1">
-            <Link to="/forgot-password" className="text-sm font-medium text-primary hover:text-primary-dark">
+          <div className="flex justify-end pt-1">
+            <Link to="/forgot-password" className="text-[13px] text-secondary hover:underline font-medium">
               {t.forgotPasswordLink}
             </Link>
           </div>
         </div>
 
-        <Button type="submit" className="w-full" isLoading={isSubmitting}>
-          {t.submitButton}
-        </Button>
+        <div className="pt-2">
+          <Button type="submit" className="w-full" isLoading={isSubmitting}>
+            {t.submitButton}
+          </Button>
+        </div>
 
-        <div className="text-center mt-4 text-sm">
-          <Link to="/signup" className="text-primary hover:text-primary-dark font-medium">
-            {t.noAccountLink}
-          </Link>
+        <div className="text-center pt-xl">
+          <p className="font-body-md text-on-surface-variant">
+            {t.noAccountLink.split('?')[0]}?{' '}
+            <Link to="/signup" className="text-secondary font-semibold hover:underline ml-xs">
+              {t.noAccountLink.split('?')[1] || 'Sign up'}
+            </Link>
+          </p>
         </div>
       </form>
     </AuthLayout>

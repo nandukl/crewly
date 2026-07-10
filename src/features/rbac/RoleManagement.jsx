@@ -4,7 +4,7 @@ import { rbacService } from '../../lib/rbacService';
 import { Button } from '../../components/ui/Button';
 import en from '../../locales/en.json';
 
-const AVAILABLE_RESOURCES = ['employee_records', 'payroll_runs', 'billing_invoices', 'organization_settings'];
+const AVAILABLE_RESOURCES = ['employee_records', 'payroll_runs', 'billing_invoices', 'organization_settings', 'attendance_records', 'attendance_policies', 'attendance_corrections', 'leave_requests', 'leave_types', 'leave_balances'];
 const AVAILABLE_ACTIONS = ['view', 'edit', 'approve', 'delete'];
 
 export const RoleManagement = () => {

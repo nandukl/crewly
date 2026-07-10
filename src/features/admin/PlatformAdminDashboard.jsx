@@ -1,174 +1,105 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { adminService } from '../../lib/adminService';
 import { supabase } from '../../lib/supabaseClient';
+import { OrganizationsTab } from './tabs/OrganizationsTab';
+import { SystemUsersTab } from './tabs/SystemUsersTab';
+import { GlobalSettingsTab } from './tabs/GlobalSettingsTab';
 
 export const PlatformAdminDashboard = () => {
-  const [organizations, setOrganizations] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [updatingId, setUpdatingId] = useState(null);
+  const [activeTab, setActiveTab] = useState('organizations');
   const navigate = useNavigate();
-
-  useEffect(() => {
-    fetchOrganizations();
-  }, []);
-
-  const fetchOrganizations = async () => {
-    setLoading(true);
-    const { data, error_code, message } = await adminService.getPlatformOrganizations();
-    if (error_code) {
-      setError(message);
-    } else {
-      setOrganizations(data || []);
-    }
-    setLoading(false);
-  };
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     navigate('/login');
   };
 
-  const handleUpdateStatus = async (orgId, newStatus) => {
-    setUpdatingId(orgId);
-    const { error_code, message } = await adminService.updatePlatformSubscription(orgId, newStatus);
-    if (error_code) {
-      alert(`Failed to update status: ${message}`);
-    } else {
-      // Update local state
-      setOrganizations(orgs => 
-        orgs.map(org => 
-          org.organization_id === orgId 
-            ? { ...org, subscription_status: newStatus } 
-            : org
-        )
-      );
-    }
-    setUpdatingId(null);
-  };
-
-  const handleArchiveOrg = async (orgId) => {
-    if (!window.confirm("Are you sure you want to archive this organization? Users will lose access.")) return;
-    
-    setUpdatingId(orgId);
-    const { error_code, message } = await adminService.archiveOrganization(orgId);
-    if (error_code) {
-      alert(`Failed to archive organization: ${message}`);
-    } else {
-      setOrganizations(orgs => 
-        orgs.map(org => 
-          org.organization_id === orgId 
-            ? { ...org, organization_status: 'archived' } 
-            : org
-        )
-      );
-    }
-    setUpdatingId(null);
-  };
-
-  if (loading) return <div className="p-8 text-center text-slate-600">Loading Platform Data...</div>;
+  const navItems = [
+    { id: 'overview', label: 'Overview', icon: 'dashboard', disabled: true },
+    { id: 'organizations', label: 'Tenants & Billing', icon: 'business' },
+    { id: 'users', label: 'System Users', icon: 'group' },
+    { id: 'settings', label: 'Global Settings', icon: 'settings' }
+  ];
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="bg-slate-900 shadow">
-        <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-            <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-            Platform Admin
-          </h1>
-          <div className="flex gap-4">
-            <button onClick={() => navigate('/dashboard')} className="text-sm text-slate-300 hover:text-white transition">Exit Admin</button>
-            <button onClick={handleSignOut} className="text-sm text-slate-400 hover:text-white transition">Sign Out</button>
+    <div className="flex h-screen bg-surface-container overflow-hidden">
+      {/* Side Navigation */}
+      <aside className="w-[280px] bg-surface-container-lowest border-r border-outline-variant flex flex-col z-20 flex-shrink-0">
+        <div className="h-[64px] flex items-center px-lg border-b border-outline-variant">
+          <div className="flex items-center gap-sm text-primary">
+            <span className="material-symbols-outlined text-[28px]">admin_panel_settings</span>
+            <span className="font-title-lg font-bold tracking-tight">Crewly Admin</span>
           </div>
         </div>
-      </header>
-      
-      <main className="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
-        {error && (
-          <div className="mb-6 p-4 bg-red-100 border border-red-300 text-red-800 rounded">
-            Error: {error}
-          </div>
-        )}
 
-        <div className="bg-white shadow rounded-lg overflow-hidden border border-slate-200">
-          <div className="px-6 py-5 border-b border-gray-200 flex justify-between items-center">
-            <h3 className="text-lg leading-6 font-medium text-gray-900">All Organizations</h3>
-            <span className="text-sm text-slate-500 bg-slate-100 px-3 py-1 rounded-full font-medium border border-slate-200">
-              {organizations.length} Total Tenants
-            </span>
+        <div className="flex-1 py-md px-sm overflow-y-auto space-y-1">
+          <div className="px-md py-sm mb-xs">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/70">Platform Control</span>
           </div>
-          
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-slate-50">
-                <tr>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">Organization Name</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">Owner Email</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">Created At</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">Action</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {organizations.map((org) => (
-                  <tr key={org.organization_id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-semibold text-slate-900">{org.organization_name}</div>
-                      <div className="text-xs text-slate-400 font-mono mt-1">{org.organization_id}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
-                      {org.owner_email || 'No owner found'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
-                      {new Date(org.created_at).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex flex-col gap-2">
-                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-bold rounded-full border w-max
-                          ${org.subscription_status === 'active' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 
-                            org.subscription_status === 'trial' ? 'bg-amber-50 text-amber-700 border-amber-200' : 
-                            org.subscription_status === 'locked' ? 'bg-red-50 text-red-700 border-red-200' :
-                            'bg-slate-100 text-slate-700 border-slate-200'}`}>
-                          Sub: {(org.subscription_status || 'UNKNOWN').toUpperCase()}
-                        </span>
-                        
-                        {org.organization_status === 'archived' && (
-                          <span className="px-2 py-1 inline-flex text-xs leading-5 font-bold rounded-full border bg-gray-100 text-gray-700 border-gray-300 w-max">
-                            Org: ARCHIVED
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex items-center gap-3">
-                        <select 
-                          disabled={updatingId === org.organization_id}
-                          value={org.subscription_status || ''}
-                          onChange={(e) => handleUpdateStatus(org.organization_id, e.target.value)}
-                          className="text-sm border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50"
-                        >
-                          <option value="trial">Trial</option>
-                          <option value="active">Active</option>
-                          <option value="grace_period">Grace Period</option>
-                          <option value="locked">Locked</option>
-                        </select>
+          {navItems.map((item) => (
+            <button
+              key={item.id}
+              disabled={item.disabled}
+              onClick={() => setActiveTab(item.id)}
+              className={`w-full flex items-center gap-md px-md py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                activeTab === item.id
+                  ? 'bg-primary-container text-on-primary-container'
+                  : 'text-on-surface hover:bg-surface-container-highest'
+              } ${item.disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              <span className={`material-symbols-outlined text-[20px] ${activeTab === item.id ? 'text-primary' : 'text-on-surface-variant'}`}>
+                {item.icon}
+              </span>
+              {item.label}
+              {item.disabled && <span className="ml-auto text-[10px] bg-surface-container px-2 py-0.5 rounded border border-outline-variant text-on-surface-variant">Soon</span>}
+            </button>
+          ))}
+        </div>
 
-                        {org.organization_status !== 'archived' && (
-                          <button
-                            onClick={() => handleArchiveOrg(org.organization_id)}
-                            disabled={updatingId === org.organization_id}
-                            className="text-red-600 hover:text-red-800 disabled:opacity-50 font-semibold text-xs border border-red-200 bg-red-50 px-2 py-1.5 rounded"
-                          >
-                            Archive
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        <div className="p-sm border-t border-outline-variant">
+          <button
+            onClick={() => navigate('/dashboard')}
+            className="w-full flex items-center gap-md px-md py-2.5 rounded-lg text-sm font-medium text-on-surface hover:bg-surface-container-highest transition-colors mb-1"
+          >
+            <span className="material-symbols-outlined text-[20px] text-on-surface-variant">arrow_back</span>
+            Exit Admin
+          </button>
+          <button
+            onClick={handleSignOut}
+            className="w-full flex items-center gap-md px-md py-2.5 rounded-lg text-sm font-medium text-error hover:bg-error-container/50 transition-colors"
+          >
+            <span className="material-symbols-outlined text-[20px]">logout</span>
+            Sign Out
+          </button>
+        </div>
+      </aside>
+
+      {/* Main Content Area */}
+      <main className="flex-1 flex flex-col relative overflow-hidden bg-surface-container">
+        {/* Top Header */}
+        <header className="h-[64px] flex justify-between items-center px-xl bg-surface-container-lowest border-b border-outline-variant flex-shrink-0 z-10">
+          <div className="flex items-center gap-md">
+            <h2 className="font-title-lg text-title-lg text-on-surface">
+              {navItems.find(n => n.id === activeTab)?.label}
+            </h2>
+          </div>
+          <div className="flex items-center gap-md">
+             <span className="inline-flex items-center gap-sm px-sm py-1 bg-error-container/30 border border-error/20 rounded-full">
+               <span className="w-2 h-2 rounded-full bg-error animate-pulse"></span>
+               <span className="text-xs font-bold text-error uppercase tracking-wider">Super Admin</span>
+             </span>
+          </div>
+        </header>
+
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-y-auto p-xl">
+          <div className="max-w-container-max mx-auto w-full">
+            {activeTab === 'organizations' && <OrganizationsTab />}
+            {activeTab === 'users' && <SystemUsersTab />}
+            {activeTab === 'settings' && <GlobalSettingsTab />}
+            {activeTab === 'overview' && (
+              <div className="p-xl text-center text-on-surface-variant">Overview dashboard coming soon...</div>
+            )}
           </div>
         </div>
       </main>

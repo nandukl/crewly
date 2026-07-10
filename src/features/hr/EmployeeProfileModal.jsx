@@ -41,72 +41,73 @@ export const EmployeeProfileModal = ({ employee, departments, employees, isAdmin
   const potentialManagers = employees.filter(e => e.id !== employee.id); // Cannot manage self
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-md bg-black/40 backdrop-blur-sm">
+      <div className="bg-surface-container-lowest rounded-xl shadow-xl w-full max-w-[500px] border border-outline-variant overflow-hidden flex flex-col max-h-[90vh]">
         
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
-          <h3 className="text-lg font-semibold text-slate-900">Employee Profile</h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+        <div className="px-xl py-lg border-b border-outline-variant flex justify-between items-center bg-surface-container">
+          <h3 className="font-title-lg text-title-lg text-on-surface flex items-center gap-sm">
+            <span className="material-symbols-outlined text-secondary">badge</span>
+            Employee Profile
+          </h3>
+          <button onClick={onClose} className="text-on-surface-variant hover:text-on-surface transition-colors">
+            <span className="material-symbols-outlined">close</span>
           </button>
         </div>
 
         {/* Content */}
-        <div className="px-6 py-6 overflow-y-auto">
-          <div className="flex items-center gap-4 mb-6">
+        <div className="p-xl overflow-y-auto space-y-xl">
+          <div className="flex items-center gap-lg">
             {employee.avatarUrl ? (
-              <img src={employee.avatarUrl} alt="" className="h-16 w-16 rounded-full object-cover border border-slate-200 shadow-sm" />
+              <img src={employee.avatarUrl} alt="" className="h-16 w-16 rounded-full object-cover border-2 border-white shadow-sm flex-shrink-0" />
             ) : (
-              <div className="h-16 w-16 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xl uppercase">
+              <div className="h-16 w-16 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container font-headline-md font-bold uppercase shadow-sm flex-shrink-0">
                 {employee.fullName?.charAt(0) || employee.email?.charAt(0)}
               </div>
             )}
-            <div>
-              <h4 className="text-xl font-bold text-slate-900">{employee.fullName || 'Pending User'}</h4>
-              <p className="text-sm text-slate-500">{employee.email}</p>
-              <div className="mt-1 flex gap-2">
-                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-800 border border-slate-200">
+            <div className="flex flex-col">
+              <h4 className="font-title-lg text-title-lg font-bold text-on-surface">{employee.fullName || 'Pending User'}</h4>
+              <p className="text-sm text-on-surface-variant mb-xs">{employee.email}</p>
+              <div className="flex gap-2">
+                <span className="inline-flex items-center px-sm py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest bg-surface-container-high text-on-surface border border-outline-variant">
                   Role: {employee.role}
                 </span>
               </div>
             </div>
           </div>
 
-          {error && <div className="mb-4 p-3 text-sm text-red-700 bg-red-100 rounded-md">{error}</div>}
+          {error && <div className="p-3 text-sm text-error bg-error-container rounded-md border border-error/20">{error}</div>}
 
-          <form id="hr-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700">Employee Code</label>
-                <input type="text" {...register('employee_code')} disabled={!isAdmin} className="mt-1 block w-full border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm disabled:bg-slate-50" />
+          <form id="hr-form" onSubmit={handleSubmit(onSubmit)} className="space-y-md">
+            <div className="grid grid-cols-2 gap-md">
+              <div className="space-y-sm">
+                <label className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Employee Code</label>
+                <input type="text" {...register('employee_code')} disabled={!isAdmin} className="w-full h-12 px-md border border-outline-variant rounded-lg focus-ring font-body-md text-on-surface disabled:bg-surface-container-low" />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700">Date of Joining</label>
-                <input type="date" {...register('date_of_joining')} disabled={!isAdmin} className="mt-1 block w-full border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm disabled:bg-slate-50" />
+              <div className="space-y-sm">
+                <label className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Date of Joining</label>
+                <input type="date" {...register('date_of_joining')} disabled={!isAdmin} className="w-full h-12 px-md border border-outline-variant rounded-lg focus-ring font-body-md text-on-surface disabled:bg-surface-container-low" />
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-slate-700">Designation / Job Title</label>
-              <input type="text" {...register('designation')} disabled={!isAdmin} className="mt-1 block w-full border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm disabled:bg-slate-50" />
+            <div className="space-y-sm">
+              <label className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Designation / Job Title</label>
+              <input type="text" {...register('designation')} disabled={!isAdmin} className="w-full h-12 px-md border border-outline-variant rounded-lg focus-ring font-body-md text-on-surface disabled:bg-surface-container-low" />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700">Department</label>
-                <select {...register('department_id')} disabled={!isAdmin} className="mt-1 block w-full border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm disabled:bg-slate-50">
+            <div className="grid grid-cols-2 gap-md">
+              <div className="space-y-sm">
+                <label className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Department</label>
+                <select {...register('department_id')} disabled={!isAdmin} className="w-full h-12 px-md border border-outline-variant rounded-lg focus-ring font-body-md text-on-surface disabled:bg-surface-container-low">
                   <option value="">-- None --</option>
                   {departments.map(d => (
                     <option key={d.id} value={d.id}>{d.name}</option>
                   ))}
                 </select>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700">Employment Type</label>
-                <select {...register('employment_type')} disabled={!isAdmin} className="mt-1 block w-full border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm disabled:bg-slate-50">
+              <div className="space-y-sm">
+                <label className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Employment Type</label>
+                <select {...register('employment_type')} disabled={!isAdmin} className="w-full h-12 px-md border border-outline-variant rounded-lg focus-ring font-body-md text-on-surface disabled:bg-surface-container-low">
                   <option value="Full-time">Full-time</option>
                   <option value="Part-time">Part-time</option>
                   <option value="Contract">Contract</option>
@@ -115,9 +116,9 @@ export const EmployeeProfileModal = ({ employee, departments, employees, isAdmin
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-slate-700">Manager</label>
-              <select {...register('manager_id')} disabled={!isAdmin} className="mt-1 block w-full border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm disabled:bg-slate-50">
+            <div className="space-y-sm">
+              <label className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Manager</label>
+              <select {...register('manager_id')} disabled={!isAdmin} className="w-full h-12 px-md border border-outline-variant rounded-lg focus-ring font-body-md text-on-surface disabled:bg-surface-container-low">
                 <option value="">-- No Manager --</option>
                 {potentialManagers.map(m => (
                   <option key={m.membershipId} value={m.membershipId}>
@@ -130,10 +131,10 @@ export const EmployeeProfileModal = ({ employee, departments, employees, isAdmin
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-slate-200 bg-slate-50 flex justify-end gap-3">
-          <Button variant="secondary" onClick={onClose} disabled={loading}>Close</Button>
+        <div className="px-xl py-lg border-t border-outline-variant bg-surface-container flex justify-end gap-md mt-auto">
+          <Button variant="outline" onClick={onClose} disabled={loading} className="h-10">Close</Button>
           {isAdmin && (
-            <Button type="submit" form="hr-form" disabled={loading || !isDirty}>
+            <Button type="submit" form="hr-form" disabled={loading || !isDirty} className="h-10">
               {loading ? 'Saving...' : 'Save Changes'}
             </Button>
           )}

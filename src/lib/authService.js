@@ -218,7 +218,23 @@ export const authService = {
 
   enrollMfa: async () => {
     try {
-      const { data, error } = await supabase.auth.mfa.enroll({ factorType: 'totp' });
+      // Clean up any existing unverified factors if possible
+      const { data: factorData } = await supabase.auth.mfa.listFactors();
+      if (factorData?.all) {
+        const unverified = factorData.all.filter(f => f.status === 'unverified');
+        for (const f of unverified) {
+          const { error: unenrollError } = await supabase.auth.mfa.unenroll({ factorId: f.id });
+          if (unenrollError) console.warn('Failed to unenroll factor:', unenrollError);
+        }
+      }
+
+      // Provide a unique friendlyName to ensure no collision ever happens
+      const uniqueName = `Authenticator ${Date.now()}`;
+      const { data, error } = await supabase.auth.mfa.enroll({ 
+        factorType: 'totp',
+        friendlyName: uniqueName
+      });
+      
       if (error) throw error;
       
       const { data: { user } } = await supabase.auth.getUser();

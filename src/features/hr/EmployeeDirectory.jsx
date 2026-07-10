@@ -3,6 +3,7 @@ import { hrService } from '../../lib/hrService';
 import { useOrg } from '../org/OrgContext';
 import { Button } from '../../components/ui/Button';
 import { EmployeeProfileModal } from './EmployeeProfileModal';
+import { CreateEmployeeModal } from './CreateEmployeeModal';
 
 export const EmployeeDirectory = () => {
   const { activeOrganization, currentMembership } = useOrg();
@@ -12,6 +13,7 @@ export const EmployeeDirectory = () => {
   const [error, setError] = useState(null);
   
   const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const isAdmin = currentMembership?.role === 'owner' || currentMembership?.role === 'org_admin';
 
@@ -46,6 +48,15 @@ export const EmployeeDirectory = () => {
           <h2 className="text-2xl font-bold text-slate-900">Employee Directory</h2>
           <p className="text-slate-500 mt-1">View and manage all employees in {activeOrganization.name}.</p>
         </div>
+        {isAdmin && (
+          <button 
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center gap-2 bg-primary text-on-primary px-4 py-2 rounded-lg font-bold hover:bg-primary/90 transition-colors"
+          >
+            <span className="material-symbols-outlined">person_add</span>
+            Create Employee
+          </button>
+        )}
       </div>
 
       <div className="bg-white shadow overflow-hidden sm:rounded-lg">
@@ -94,6 +105,16 @@ export const EmployeeDirectory = () => {
           isAdmin={isAdmin}
           onClose={() => setSelectedEmployee(null)} 
           onUpdate={() => {
+            fetchData();
+          }}
+        />
+      )}
+
+      {showCreateModal && (
+        <CreateEmployeeModal 
+          activeOrganization={activeOrganization}
+          onClose={() => setShowCreateModal(false)}
+          onSuccess={() => {
             fetchData();
           }}
         />

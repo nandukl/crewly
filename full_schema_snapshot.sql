@@ -1254,3 +1254,1063 @@ END;
 $$;
 
 
+-- ==========================================
+-- MIGRATION: 20240106000000_security_patches.sql
+-- ==========================================
+
+-- supabase/migrations/20240106000000_security_patches.sql
+
+-- A. Organizations & Memberships RLS Lockdown
+DROP POLICY IF EXISTS "Users can create org" ON public.organizations;
+DROP POLICY IF EXISTS "Owners and Admins can update their orgs" ON public.organizations;
+
+DROP POLICY IF EXISTS "Users can insert their own owner membership" ON public.memberships;
+DROP POLICY IF EXISTS "Owners and Admins can manage memberships" ON public.memberships;
+
+-- Structure Nodes RLS Lockdown
+DROP POLICY IF EXISTS "Owners and Admins can manage structure" ON public.structure_nodes;
+
+-- Subscriptions RLS Update (Missing session check)
+DROP POLICY IF EXISTS "Super Admins can update subscriptions" ON public.subscriptions;
+CREATE POLICY "Super Admins can update subscriptions" ON public.subscriptions FOR UPDATE
+USING (
+  EXISTS (SELECT 1 FROM public.user_profiles WHERE id = auth.uid() AND is_super_admin = true)
+  AND NOT public.is_session_revoked((auth.jwt()->>'session_id')::uuid)
+);
+
+-- Foreign Key fix for last_active_org_id
+ALTER TABLE public.user_profiles
+DROP CONSTRAINT IF EXISTS fk_last_active_org;
+
+ALTER TABLE public.user_profiles
+ADD CONSTRAINT fk_last_active_org FOREIGN KEY (last_active_org_id) REFERENCES public.organizations(id) ON DELETE SET NULL;
+
+-- B. Memberships Delete Trigger
+CREATE OR REPLACE FUNCTION public.block_owner_deletion()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF OLD.role = 'owner' THEN
+        RAISE EXCEPTION 'INVALID_OPERATION: Cannot delete the owner membership. Transfer ownership first.';
+    END IF;
+    RETURN OLD;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS block_owner_deletion_trigger ON public.memberships;
+CREATE TRIGGER block_owner_deletion_trigger
+BEFORE DELETE ON public.memberships
+FOR EACH ROW
+EXECUTE FUNCTION public.block_owner_deletion();
+
+-- C. Atomic RPCs for Organizations
+
+CREATE OR REPLACE FUNCTION public.update_organization(
+    p_org_id UUID,
+    p_updates JSONB
+)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+    IF NOT public.is_org_admin(p_org_id) THEN
+        RAISE EXCEPTION 'UNAUTHORIZED: Only Owners and Admins can update the organization.';
+    END IF;
+
+    -- Extract values safely
+    UPDATE public.organizations
+    SET 
+        name = COALESCE(p_updates->>'name', name),
+        logo_url = COALESCE(p_updates->>'logo_url', logo_url),
+        industry = COALESCE(p_updates->>'industry', industry),
+        size = COALESCE(p_updates->>'size', size),
+        locale = COALESCE(p_updates->>'locale', locale),
+        timezone = COALESCE(p_updates->>'timezone', timezone),
+        currency = COALESCE(p_updates->>'currency', currency),
+        updated_at = NOW()
+    WHERE id = p_org_id;
+
+    IF p_updates ? 'slug' THEN
+        UPDATE public.organizations SET slug = p_updates->>'slug' WHERE id = p_org_id;
+    END IF;
+
+    INSERT INTO public.auth_audit_logs (user_id, event_type, metadata)
+    VALUES (
+        auth.uid(), 
+        'ORG_UPDATED', 
+        jsonb_build_object('organization_id', p_org_id, 'updates', p_updates)
+    );
+END;
+$$;
+
+-- D. Atomic RPCs for Memberships
+
+CREATE OR REPLACE FUNCTION public.invite_member(
+    p_org_id UUID,
+    p_email TEXT,
+    p_role public.membership_role
+)
+RETURNS UUID
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_membership_id UUID;
+    v_status public.membership_status;
+BEGIN
+    IF NOT public.is_org_admin(p_org_id) THEN
+        RAISE EXCEPTION 'UNAUTHORIZED: Only Owners and Admins can invite members.';
+    END IF;
+
+    -- Check existing
+    SELECT id, status INTO v_membership_id, v_status
+    FROM public.memberships
+    WHERE organization_id = p_org_id AND email = p_email;
+
+    IF FOUND THEN
+        IF v_status = 'active' THEN
+            RAISE EXCEPTION 'INVALID_OPERATION: User is already an active member of this organization.';
+        END IF;
+
+        UPDATE public.memberships
+        SET status = 'pending_invitation', role = p_role, updated_at = NOW()
+        WHERE id = v_membership_id;
+    ELSE
+        INSERT INTO public.memberships (organization_id, email, role, status)
+        VALUES (p_org_id, p_email, p_role, 'pending_invitation')
+        RETURNING id INTO v_membership_id;
+    END IF;
+
+    INSERT INTO public.auth_audit_logs (user_id, event_type, metadata)
+    VALUES (
+        auth.uid(), 
+        'MEMBER_INVITED', 
+        jsonb_build_object('organization_id', p_org_id, 'email', p_email, 'role', p_role)
+    );
+
+    RETURN v_membership_id;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.update_membership_status(
+    p_membership_id UUID,
+    p_status public.membership_status
+)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_org_id UUID;
+    v_role public.membership_role;
+    v_email TEXT;
+BEGIN
+    -- Get org_id for authorization
+    SELECT organization_id, role, email INTO v_org_id, v_role, v_email
+    FROM public.memberships
+    WHERE id = p_membership_id;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'NOT_FOUND: Membership does not exist.';
+    END IF;
+
+    IF NOT public.is_org_admin(v_org_id) THEN
+        RAISE EXCEPTION 'UNAUTHORIZED: Only Owners and Admins can update membership status.';
+    END IF;
+
+    IF p_status = 'removed' AND v_role = 'owner' THEN
+        RAISE EXCEPTION 'INVALID_OPERATION: Cannot remove the owner. Transfer ownership first.';
+    END IF;
+
+    UPDATE public.memberships
+    SET status = p_status, updated_at = NOW()
+    WHERE id = p_membership_id;
+
+    INSERT INTO public.auth_audit_logs (user_id, event_type, metadata)
+    VALUES (
+        auth.uid(), 
+        'MEMBERSHIP_STATUS_UPDATED', 
+        jsonb_build_object('organization_id', v_org_id, 'membership_id', p_membership_id, 'status', p_status)
+    );
+END;
+$$;
+
+-- E. Atomic RPCs for Structure Nodes
+
+CREATE OR REPLACE FUNCTION public.create_structure_node(
+    p_org_id UUID,
+    p_parent_id UUID,
+    p_name TEXT,
+    p_type TEXT
+)
+RETURNS UUID
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_node_id UUID;
+BEGIN
+    IF NOT public.is_org_admin(p_org_id) THEN
+        RAISE EXCEPTION 'UNAUTHORIZED: Only Owners and Admins can create structure nodes.';
+    END IF;
+
+    INSERT INTO public.structure_nodes (organization_id, parent_id, name, type)
+    VALUES (p_org_id, p_parent_id, p_name, p_type::public.structure_node_type)
+    RETURNING id INTO v_node_id;
+
+    INSERT INTO public.auth_audit_logs (user_id, event_type, metadata)
+    VALUES (
+        auth.uid(), 
+        'STRUCTURE_NODE_CREATED', 
+        jsonb_build_object('organization_id', p_org_id, 'node_id', v_node_id, 'name', p_name, 'type', p_type)
+    );
+
+    RETURN v_node_id;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.update_structure_node(
+    p_node_id UUID,
+    p_name TEXT,
+    p_type TEXT
+)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_org_id UUID;
+BEGIN
+    SELECT organization_id INTO v_org_id
+    FROM public.structure_nodes
+    WHERE id = p_node_id;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'NOT_FOUND: Structure node does not exist.';
+    END IF;
+
+    IF NOT public.is_org_admin(v_org_id) THEN
+        RAISE EXCEPTION 'UNAUTHORIZED: Only Owners and Admins can update structure nodes.';
+    END IF;
+
+    UPDATE public.structure_nodes
+    SET 
+        name = COALESCE(p_name, name),
+        type = COALESCE(p_type::public.structure_node_type, type),
+        updated_at = NOW()
+    WHERE id = p_node_id;
+
+    INSERT INTO public.auth_audit_logs (user_id, event_type, metadata)
+    VALUES (
+        auth.uid(), 
+        'STRUCTURE_NODE_UPDATED', 
+        jsonb_build_object('organization_id', v_org_id, 'node_id', p_node_id, 'name', p_name, 'type', p_type)
+    );
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.archive_structure_node(
+    p_node_id UUID
+)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_org_id UUID;
+    v_children_count INT;
+    v_members_count INT;
+BEGIN
+    SELECT organization_id INTO v_org_id
+    FROM public.structure_nodes
+    WHERE id = p_node_id;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'NOT_FOUND: Structure node does not exist.';
+    END IF;
+
+    IF NOT public.is_org_admin(v_org_id) THEN
+        RAISE EXCEPTION 'UNAUTHORIZED: Only Owners and Admins can archive structure nodes.';
+    END IF;
+
+    -- Dependent Checking
+    SELECT COUNT(*) INTO v_children_count
+    FROM public.structure_nodes
+    WHERE parent_id = p_node_id AND status = 'active';
+
+    IF v_children_count > 0 THEN
+        RAISE EXCEPTION 'INVALID_OPERATION: Cannot archive a node that has active child nodes.';
+    END IF;
+
+    SELECT COUNT(*) INTO v_members_count
+    FROM public.memberships
+    WHERE structure_node_id = p_node_id AND status != 'removed';
+
+    IF v_members_count > 0 THEN
+        RAISE EXCEPTION 'INVALID_OPERATION: Cannot archive a node that has active memberships assigned to it.';
+    END IF;
+
+    UPDATE public.structure_nodes
+    SET status = 'archived', updated_at = NOW()
+    WHERE id = p_node_id;
+
+    INSERT INTO public.auth_audit_logs (user_id, event_type, metadata)
+    VALUES (
+        auth.uid(), 
+        'STRUCTURE_NODE_ARCHIVED', 
+        jsonb_build_object('organization_id', v_org_id, 'node_id', p_node_id)
+    );
+END;
+$$;
+
+
+-- ==========================================
+-- MIGRATION: 20240107000000_notifications_schema.sql
+-- ==========================================
+
+-- supabase/migrations/20240107000000_notifications_schema.sql
+
+CREATE TABLE public.notifications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID REFERENCES public.organizations(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    type TEXT NOT NULL,
+    title TEXT NOT NULL,
+    message TEXT NOT NULL,
+    action_url TEXT,
+    is_read BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- RLS
+ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view their own notifications" ON public.notifications FOR SELECT
+USING (
+    auth.uid() = user_id
+    AND NOT public.is_session_revoked((auth.jwt()->>'session_id')::uuid)
+);
+
+CREATE POLICY "Users can mark their own notifications as read" ON public.notifications FOR UPDATE
+USING (
+    auth.uid() = user_id
+    AND NOT public.is_session_revoked((auth.jwt()->>'session_id')::uuid)
+)
+WITH CHECK (
+    auth.uid() = user_id
+    AND NOT public.is_session_revoked((auth.jwt()->>'session_id')::uuid)
+);
+
+-- RPC
+CREATE OR REPLACE FUNCTION public.mark_notification_read(p_notification_id UUID)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+    UPDATE public.notifications
+    SET is_read = true
+    WHERE id = p_notification_id AND user_id = auth.uid();
+END;
+$$;
+
+
+-- ==========================================
+-- MIGRATION: 20240108000000_audit_logging_schema.sql
+-- ==========================================
+
+-- supabase/migrations/20240108000000_audit_logging_schema.sql
+
+-- 1. Create the new unified audit_logs table
+CREATE TABLE public.audit_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID, -- Nullable for platform/auth events
+    user_id UUID,
+    event_type TEXT NOT NULL,
+    entity_type TEXT,
+    entity_id UUID,
+    metadata JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 2. Migrate existing records from auth_audit_logs if it exists
+INSERT INTO public.audit_logs (user_id, event_type, metadata, created_at)
+SELECT user_id, event_type, metadata, created_at FROM public.auth_audit_logs;
+
+-- Drop the old stub table
+DROP TABLE IF EXISTS public.auth_audit_logs;
+
+-- 3. Enforce absolute immutability via Trigger
+CREATE OR REPLACE FUNCTION public.block_audit_log_modification()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RAISE EXCEPTION 'Audit logs are immutable and cannot be updated or deleted.';
+END;
+$$;
+
+CREATE TRIGGER tr_audit_logs_immutable
+BEFORE UPDATE OR DELETE ON public.audit_logs
+FOR EACH ROW EXECUTE FUNCTION public.block_audit_log_modification();
+
+-- 4. Set up RLS for viewing
+ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Org Admins can view their org audit logs" ON public.audit_logs
+FOR SELECT
+USING (
+    organization_id IS NOT NULL 
+    AND public.is_org_admin(organization_id)
+    AND NOT public.is_session_revoked((auth.jwt()->>'session_id')::uuid)
+);
+
+-- Note: We do NOT create an INSERT policy. Inserts are only allowed via SECURITY DEFINER functions/triggers.
+
+-- 5. Update the manual RPC for frontend events (Auth/Billing)
+CREATE OR REPLACE FUNCTION public.record_audit_log(
+    p_event_type TEXT, 
+    p_user_id UUID, 
+    p_metadata JSONB DEFAULT '{}'::jsonb,
+    p_organization_id UUID DEFAULT NULL,
+    p_entity_type TEXT DEFAULT NULL,
+    p_entity_id UUID DEFAULT NULL
+)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+    INSERT INTO public.audit_logs (
+        organization_id, user_id, event_type, entity_type, entity_id, metadata
+    ) VALUES (
+        p_organization_id, p_user_id, p_event_type, p_entity_type, p_entity_id, p_metadata
+    );
+END;
+$$;
+
+-- 6. Generic Database Trigger for automatic backend auditing
+CREATE OR REPLACE FUNCTION public.audit_trigger_func()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_org_id UUID;
+    v_user_id UUID;
+    v_metadata JSONB;
+    v_entity_id UUID;
+    v_new_json JSONB;
+    v_old_json JSONB;
+BEGIN
+    v_user_id := auth.uid();
+    v_new_json := to_jsonb(NEW);
+    v_old_json := to_jsonb(OLD);
+    
+    -- Safely extract organization_id
+    IF TG_TABLE_NAME = 'organizations' THEN
+        v_org_id := COALESCE((v_new_json->>'id')::UUID, (v_old_json->>'id')::UUID);
+    ELSE
+        v_org_id := COALESCE((v_new_json->>'organization_id')::UUID, (v_old_json->>'organization_id')::UUID);
+    END IF;
+
+    -- Safely extract entity_id
+    v_entity_id := COALESCE((v_new_json->>'id')::UUID, (v_old_json->>'id')::UUID);
+
+    -- Build metadata
+    v_metadata := jsonb_build_object(
+        'table', TG_TABLE_NAME,
+        'action', TG_OP,
+        'old_record', v_old_json,
+        'new_record', v_new_json
+    );
+
+    -- Insert directly into audit_logs bypassing RLS
+    INSERT INTO public.audit_logs (
+        organization_id, user_id, event_type, entity_type, entity_id, metadata
+    ) VALUES (
+        v_org_id, v_user_id, 'DB_' || TG_OP, TG_TABLE_NAME, v_entity_id, v_metadata
+    );
+
+    IF TG_OP = 'DELETE' THEN
+        RETURN OLD;
+    ELSE
+        RETURN NEW;
+    END IF;
+END;
+$$;
+
+-- 7. Attach generic audit trigger to core tables
+CREATE TRIGGER tr_audit_organizations
+AFTER INSERT OR UPDATE OR DELETE ON public.organizations
+FOR EACH ROW EXECUTE FUNCTION public.audit_trigger_func();
+
+CREATE TRIGGER tr_audit_memberships
+AFTER INSERT OR UPDATE OR DELETE ON public.memberships
+FOR EACH ROW EXECUTE FUNCTION public.audit_trigger_func();
+
+CREATE TRIGGER tr_audit_structure_nodes
+AFTER INSERT OR UPDATE OR DELETE ON public.structure_nodes
+FOR EACH ROW EXECUTE FUNCTION public.audit_trigger_func();
+
+CREATE TRIGGER tr_audit_custom_roles
+AFTER INSERT OR UPDATE OR DELETE ON public.custom_roles
+FOR EACH ROW EXECUTE FUNCTION public.audit_trigger_func();
+
+CREATE TRIGGER tr_audit_permission_grants
+AFTER INSERT OR UPDATE OR DELETE ON public.permission_grants
+FOR EACH ROW EXECUTE FUNCTION public.audit_trigger_func();
+
+CREATE TRIGGER tr_audit_subscriptions
+AFTER INSERT OR UPDATE OR DELETE ON public.subscriptions
+FOR EACH ROW EXECUTE FUNCTION public.audit_trigger_func();
+
+
+-- ==========================================
+-- MIGRATION: 20240109000000_platform_admin_schema.sql
+-- ==========================================
+
+-- supabase/migrations/20240109000000_platform_admin_schema.sql
+
+CREATE OR REPLACE FUNCTION public.get_platform_organizations()
+RETURNS TABLE (
+    organization_id UUID,
+    organization_name TEXT,
+    created_at TIMESTAMPTZ,
+    owner_email TEXT,
+    subscription_status TEXT,
+    organization_status TEXT
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_is_super_admin BOOLEAN;
+BEGIN
+    -- Verify super admin status
+    SELECT is_super_admin INTO v_is_super_admin FROM public.user_profiles WHERE id = auth.uid();
+    IF NOT v_is_super_admin THEN
+        RAISE EXCEPTION 'Unauthorized: Super Admin access required.';
+    END IF;
+
+    RETURN QUERY
+    SELECT 
+        o.id AS organization_id,
+        o.name AS organization_name,
+        o.created_at,
+        m.email AS owner_email,
+        s.status::TEXT AS subscription_status,
+        o.status::TEXT AS organization_status
+    FROM public.organizations o
+    LEFT JOIN public.memberships m ON m.organization_id = o.id AND m.role = 'owner'
+    LEFT JOIN public.subscriptions s ON s.organization_id = o.id
+    ORDER BY o.created_at DESC;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.archive_platform_organization(p_org_id UUID)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_is_super_admin BOOLEAN;
+BEGIN
+    SELECT is_super_admin INTO v_is_super_admin FROM public.user_profiles WHERE id = auth.uid();
+    IF NOT COALESCE(v_is_super_admin, false) THEN
+        RAISE EXCEPTION 'Unauthorized: Super Admin access required.';
+    END IF;
+
+    UPDATE public.organizations
+    SET status = 'archived', updated_at = NOW()
+    WHERE id = p_org_id;
+END;
+$$;
+
+
+-- ==========================================
+-- MIGRATION: 20240110000000_file_storage_schema.sql
+-- ==========================================
+
+-- supabase/migrations/20240110000000_file_storage_schema.sql
+
+-- 1. Create file_records table for Postgres metadata tracking
+CREATE TABLE public.file_records (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE,
+    uploaded_by UUID NOT NULL REFERENCES auth.users(id),
+    feature_name TEXT NOT NULL,
+    file_name TEXT NOT NULL,
+    file_path TEXT NOT NULL UNIQUE,
+    file_size BIGINT NOT NULL,
+    content_type TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- RLS for file_records
+ALTER TABLE public.file_records ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view org file records" ON public.file_records FOR SELECT
+USING (
+    public.has_active_membership(organization_id)
+    AND NOT public.is_session_revoked((auth.jwt()->>'session_id')::uuid)
+);
+
+CREATE POLICY "Users can insert org file records" ON public.file_records FOR INSERT
+WITH CHECK (
+    public.has_active_membership(organization_id)
+    AND auth.uid() = uploaded_by
+    AND NOT public.is_session_revoked((auth.jwt()->>'session_id')::uuid)
+);
+
+CREATE POLICY "Org Admins can delete file records" ON public.file_records FOR DELETE
+USING (
+    public.is_org_admin(organization_id)
+    AND NOT public.is_session_revoked((auth.jwt()->>'session_id')::uuid)
+);
+
+-- Attach the generic audit trigger from Module 4
+CREATE TRIGGER tr_audit_file_records
+AFTER INSERT OR UPDATE OR DELETE ON public.file_records
+FOR EACH ROW EXECUTE FUNCTION public.audit_trigger_func();
+
+-- 2. Storage Bucket Setup
+INSERT INTO storage.buckets (id, name, public, file_size_limit)
+VALUES ('workspaces', 'workspaces', false, 10485760) -- 10MB limit
+ON CONFLICT (id) DO NOTHING;
+
+-- 3. Storage RLS Policies
+-- Path structure: {organization_id}/{feature_name}/{file_name}
+-- storage.foldername(name)[1] extracts the organization_id from the path
+
+CREATE POLICY "Users can view workspace files for their org" ON storage.objects FOR SELECT
+USING (
+    bucket_id = 'workspaces' 
+    AND public.has_active_membership(NULLIF((storage.foldername(name))[1], '')::uuid)
+    AND NOT public.is_session_revoked((auth.jwt()->>'session_id')::uuid)
+);
+
+CREATE POLICY "Users can upload workspace files for their org" ON storage.objects FOR INSERT
+WITH CHECK (
+    bucket_id = 'workspaces' 
+    AND public.has_active_membership(NULLIF((storage.foldername(name))[1], '')::uuid)
+    AND auth.uid() = owner
+    AND NOT public.is_session_revoked((auth.jwt()->>'session_id')::uuid)
+);
+
+CREATE POLICY "Users can update workspace files for their org" ON storage.objects FOR UPDATE
+USING (
+    bucket_id = 'workspaces' 
+    AND public.has_active_membership(NULLIF((storage.foldername(name))[1], '')::uuid)
+    AND NOT public.is_session_revoked((auth.jwt()->>'session_id')::uuid)
+);
+
+CREATE POLICY "Org Admins can delete workspace files" ON storage.objects FOR DELETE
+USING (
+    bucket_id = 'workspaces' 
+    AND public.is_org_admin(NULLIF((storage.foldername(name))[1], '')::uuid)
+    AND NOT public.is_session_revoked((auth.jwt()->>'session_id')::uuid)
+);
+
+
+-- ==========================================
+-- MIGRATION: 20240112000000_core_hr_schema.sql
+-- ==========================================
+
+-- supabase/migrations/20240112000000_core_hr_schema.sql
+
+-- 1. Departments Table
+CREATE TABLE public.departments (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    description TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE(organization_id, name)
+);
+
+-- RLS for departments
+ALTER TABLE public.departments ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view org departments" ON public.departments FOR SELECT
+USING (public.has_active_membership(organization_id));
+
+CREATE POLICY "Org Admins can manage departments" ON public.departments FOR ALL
+USING (public.is_org_admin(organization_id));
+
+-- 2. Employee Profiles Table
+CREATE TABLE public.employee_profiles (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    membership_id UUID NOT NULL REFERENCES public.memberships(id) ON DELETE CASCADE UNIQUE,
+    organization_id UUID NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE,
+    employee_code TEXT,
+    department_id UUID REFERENCES public.departments(id) ON DELETE SET NULL,
+    designation TEXT,
+    date_of_joining DATE,
+    manager_id UUID REFERENCES public.memberships(id) ON DELETE SET NULL,
+    employment_type TEXT DEFAULT 'Full-time',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- RLS for employee_profiles
+ALTER TABLE public.employee_profiles ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view org employee profiles" ON public.employee_profiles FOR SELECT
+USING (public.has_active_membership(organization_id));
+
+CREATE POLICY "Org Admins can manage employee profiles" ON public.employee_profiles FOR ALL
+USING (public.is_org_admin(organization_id));
+
+-- Note: We don't allow users to update their own HR records via standard UPDATE to prevent self-promotion (e.g. changing their own designation).
+-- Admins will do this via the UI, or users can have a controlled RPC if we want self-service updates later.
+
+
+-- 3. Audit Triggers
+DROP TRIGGER IF EXISTS tr_audit_departments ON public.departments;
+CREATE TRIGGER tr_audit_departments
+AFTER INSERT OR UPDATE OR DELETE ON public.departments
+FOR EACH ROW EXECUTE FUNCTION public.audit_trigger_func();
+
+DROP TRIGGER IF EXISTS tr_audit_employee_profiles ON public.employee_profiles;
+CREATE TRIGGER tr_audit_employee_profiles
+AFTER INSERT OR UPDATE OR DELETE ON public.employee_profiles
+FOR EACH ROW EXECUTE FUNCTION public.audit_trigger_func();
+
+
+-- 4. Auto-initialize Employee Profile for Memberships
+CREATE OR REPLACE FUNCTION public.tr_create_employee_profile()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+    INSERT INTO public.employee_profiles (membership_id, organization_id)
+    VALUES (NEW.id, NEW.organization_id)
+    ON CONFLICT (membership_id) DO NOTHING;
+    RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS tr_ensure_employee_profile ON public.memberships;
+CREATE TRIGGER tr_ensure_employee_profile
+AFTER INSERT ON public.memberships
+FOR EACH ROW
+EXECUTE FUNCTION public.tr_create_employee_profile();
+
+-- Retroactively create profiles for all existing memberships
+INSERT INTO public.employee_profiles (membership_id, organization_id)
+SELECT id, organization_id FROM public.memberships
+ON CONFLICT (membership_id) DO NOTHING;
+
+
+-- ==========================================
+-- MIGRATION: 20240113000000_modules_3_to_6_fixes.sql
+-- ==========================================
+
+-- supabase/migrations/20240113000000_modules_3_to_6_fixes.sql
+
+-- ==========================================
+-- MODULE 3: Notification Framework Rebuild
+-- ==========================================
+
+-- 1. Create notification_templates
+CREATE TABLE public.notification_templates (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    slug TEXT UNIQUE NOT NULL,
+    title_template TEXT NOT NULL,
+    message_template TEXT NOT NULL,
+    requires_email BOOLEAN DEFAULT false,
+    requires_in_app BOOLEAN DEFAULT true,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- RLS: Platform Admins can manage templates, everyone can view
+ALTER TABLE public.notification_templates ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Anyone can view notification templates" ON public.notification_templates FOR SELECT USING (true);
+CREATE POLICY "Super Admins can manage templates" ON public.notification_templates FOR ALL USING (
+    (SELECT is_super_admin FROM public.user_profiles WHERE id = auth.uid()) = true
+);
+
+-- 2. Create notification_deliveries queue
+CREATE TABLE public.notification_deliveries (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID REFERENCES public.organizations(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    template_slug TEXT NOT NULL REFERENCES public.notification_templates(slug),
+    payload JSONB DEFAULT '{}'::jsonb,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'completed', 'failed')),
+    error_message TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE public.notification_deliveries ENABLE ROW LEVEL SECURITY;
+-- No policies needed. Only accessible via RPCs/triggers/service_role
+
+-- 3. Create dispatch_notification RPC
+CREATE OR REPLACE FUNCTION public.dispatch_notification(
+    p_org_id UUID,
+    p_user_id UUID,
+    p_template_slug TEXT,
+    p_payload JSONB DEFAULT '{}'::jsonb,
+    p_action_url TEXT DEFAULT NULL
+)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_template public.notification_templates%ROWTYPE;
+    v_title TEXT;
+    v_message TEXT;
+    v_key TEXT;
+    v_value TEXT;
+BEGIN
+    -- Lookup template
+    SELECT * INTO v_template FROM public.notification_templates WHERE slug = p_template_slug;
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Notification template not found: %', p_template_slug;
+    END IF;
+
+    -- Basic hydration for title and message (replace {{key}} with value)
+    v_title := v_template.title_template;
+    v_message := v_template.message_template;
+    
+    FOR v_key, v_value IN SELECT * FROM jsonb_each_text(p_payload)
+    LOOP
+        v_title := replace(v_title, '{{' || v_key || '}}', v_value);
+        v_message := replace(v_message, '{{' || v_key || '}}', v_value);
+    END LOOP;
+
+    -- Create in-app notification
+    IF v_template.requires_in_app THEN
+        INSERT INTO public.notifications (
+            organization_id, user_id, type, title, message, action_url
+        ) VALUES (
+            p_org_id, p_user_id, p_template_slug, v_title, v_message, p_action_url
+        );
+    END IF;
+
+    -- Queue for external delivery
+    IF v_template.requires_email THEN
+        INSERT INTO public.notification_deliveries (
+            organization_id, user_id, template_slug, payload
+        ) VALUES (
+            p_org_id, p_user_id, p_template_slug, p_payload
+        );
+    END IF;
+END;
+$$;
+
+
+-- ==========================================
+-- MODULE 4: Audit Logging Patch
+-- ==========================================
+-- Add Super Admin cross-org visibility policy
+CREATE POLICY "Super Admins can view all audit logs" ON public.audit_logs
+FOR SELECT
+USING (
+    (SELECT is_super_admin FROM public.user_profiles WHERE id = auth.uid()) = true
+);
+
+
+-- ==========================================
+-- MODULE 5: File Storage Patch
+-- ==========================================
+-- Drop permissive UPDATE policy and replace with strict one
+DROP POLICY IF EXISTS "Users can update workspace files for their org" ON storage.objects;
+
+CREATE POLICY "Users can update workspace files for their org" ON storage.objects FOR UPDATE
+USING (
+    bucket_id = 'workspaces' 
+    AND public.has_active_membership(NULLIF((storage.foldername(name))[1], '')::uuid)
+    AND (
+        auth.uid() = owner 
+        OR public.is_org_admin(NULLIF((storage.foldername(name))[1], '')::uuid)
+    )
+    AND NOT public.is_session_revoked((auth.jwt()->>'session_id')::uuid)
+);
+
+
+-- ==========================================
+-- MODULE 6: Employee Management Rebuild
+-- ==========================================
+
+-- 1. Departments: Fix RLS to SELECT only, add RPCs
+DROP POLICY IF EXISTS "Org Admins can manage departments" ON public.departments;
+
+-- No direct INSERT/UPDATE/DELETE policies, mutations only through RPC
+
+CREATE OR REPLACE FUNCTION public.create_department(p_org_id UUID, p_name TEXT, p_description TEXT DEFAULT NULL)
+RETURNS UUID
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_dept_id UUID;
+BEGIN
+    IF NOT public.is_org_admin(p_org_id) THEN
+        RAISE EXCEPTION 'Unauthorized: Org Admin access required.';
+    END IF;
+
+    INSERT INTO public.departments (organization_id, name, description)
+    VALUES (p_org_id, p_name, p_description)
+    RETURNING id INTO v_dept_id;
+
+    RETURN v_dept_id;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.update_department(p_dept_id UUID, p_name TEXT, p_description TEXT DEFAULT NULL)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_org_id UUID;
+BEGIN
+    SELECT organization_id INTO v_org_id FROM public.departments WHERE id = p_dept_id;
+    
+    IF NOT public.is_org_admin(v_org_id) THEN
+        RAISE EXCEPTION 'Unauthorized: Org Admin access required.';
+    END IF;
+
+    UPDATE public.departments
+    SET name = COALESCE(p_name, name),
+        description = COALESCE(p_description, description),
+        updated_at = NOW()
+    WHERE id = p_dept_id;
+END;
+$$;
+
+-- Cannot archive/delete if employees are assigned
+CREATE OR REPLACE FUNCTION public.archive_department(p_dept_id UUID)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_org_id UUID;
+    v_employee_count INT;
+BEGIN
+    SELECT organization_id INTO v_org_id FROM public.departments WHERE id = p_dept_id;
+    
+    IF NOT public.is_org_admin(v_org_id) THEN
+        RAISE EXCEPTION 'Unauthorized: Org Admin access required.';
+    END IF;
+
+    SELECT COUNT(*) INTO v_employee_count FROM public.employee_profiles WHERE department_id = p_dept_id;
+    IF v_employee_count > 0 THEN
+        RAISE EXCEPTION 'Cannot delete department: % employees assigned.', v_employee_count;
+    END IF;
+
+    DELETE FROM public.departments WHERE id = p_dept_id;
+END;
+$$;
+
+
+-- 2. Employee Profiles: Fix RLS, add Employment Status
+DROP POLICY IF EXISTS "Org Admins can manage employee profiles" ON public.employee_profiles;
+
+ALTER TABLE public.employee_profiles 
+ADD COLUMN employment_status TEXT DEFAULT 'Active' CHECK (employment_status IN ('Active', 'On Leave', 'Suspended', 'Terminated'));
+
+-- Block hard-deletes
+CREATE OR REPLACE FUNCTION public.block_employee_hard_delete()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RAISE EXCEPTION 'Hard deletes on employee_profiles are strictly forbidden. Use update_employment_status RPC instead.';
+END;
+$$;
+
+CREATE TRIGGER tr_block_employee_delete
+BEFORE DELETE ON public.employee_profiles
+FOR EACH ROW EXECUTE FUNCTION public.block_employee_hard_delete();
+
+-- RPC for updating HR profile details
+CREATE OR REPLACE FUNCTION public.update_employee_profile(
+    p_employee_id UUID,
+    p_employee_code TEXT DEFAULT NULL,
+    p_department_id UUID DEFAULT NULL,
+    p_designation TEXT DEFAULT NULL,
+    p_date_of_joining DATE DEFAULT NULL,
+    p_manager_id UUID DEFAULT NULL,
+    p_employment_type TEXT DEFAULT NULL
+)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_org_id UUID;
+BEGIN
+    SELECT organization_id INTO v_org_id FROM public.employee_profiles WHERE id = p_employee_id;
+    
+    IF NOT public.is_org_admin(v_org_id) THEN
+        RAISE EXCEPTION 'Unauthorized: Org Admin access required.';
+    END IF;
+
+    UPDATE public.employee_profiles
+    SET 
+        employee_code = COALESCE(p_employee_code, employee_code),
+        department_id = COALESCE(p_department_id, department_id),
+        designation = COALESCE(p_designation, designation),
+        date_of_joining = COALESCE(p_date_of_joining, date_of_joining),
+        manager_id = COALESCE(p_manager_id, manager_id),
+        employment_type = COALESCE(p_employment_type, employment_type),
+        updated_at = NOW()
+    WHERE id = p_employee_id;
+END;
+$$;
+
+-- RPC for Lifecycle Status transition
+CREATE OR REPLACE FUNCTION public.update_employment_status(
+    p_employee_id UUID,
+    p_new_status TEXT,
+    p_reason TEXT DEFAULT NULL
+)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_org_id UUID;
+BEGIN
+    SELECT organization_id INTO v_org_id FROM public.employee_profiles WHERE id = p_employee_id;
+    
+    IF NOT public.is_org_admin(v_org_id) THEN
+        RAISE EXCEPTION 'Unauthorized: Org Admin access required.';
+    END IF;
+
+    -- Basic validation
+    IF p_new_status NOT IN ('Active', 'On Leave', 'Suspended', 'Terminated') THEN
+        RAISE EXCEPTION 'Invalid employment status: %', p_new_status;
+    END IF;
+
+    UPDATE public.employee_profiles
+    SET employment_status = p_new_status,
+        updated_at = NOW()
+    WHERE id = p_employee_id;
+
+    -- Log the transition explicitly if a reason is provided
+    IF p_reason IS NOT NULL THEN
+        PERFORM public.record_audit_log(
+            'EMPLOYMENT_STATUS_CHANGED', 
+            auth.uid(), 
+            jsonb_build_object('old_status', (SELECT employment_status FROM public.employee_profiles WHERE id = p_employee_id), 'new_status', p_new_status, 'reason', p_reason),
+            v_org_id,
+            'employee_profiles',
+            p_employee_id
+        );
+    END IF;
+END;
+$$;
+
+
