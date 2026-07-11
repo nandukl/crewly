@@ -61,7 +61,12 @@ export const StructureBuilder = () => {
   if (loading) return <div>Loading structure...</div>;
 
   const renderTree = (parentId) => {
-    const children = nodes.filter(n => (n.parent_id === parentId) || (!n.parent_id && !parentId));
+    const children = nodes.filter(n => {
+      if (parentId === null) {
+        return !n.parent_id || !nodes.find(p => p.id === n.parent_id);
+      }
+      return n.parent_id === parentId;
+    });
     if (children.length === 0) return null;
 
     return (

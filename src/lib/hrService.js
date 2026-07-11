@@ -86,5 +86,17 @@ export const hrService = {
 
     if (error) throw error;
     return data;
+  },
+
+  removeEmployee: async (membershipId) => {
+    const { data, error } = await supabase
+      .from('memberships')
+      .update({ status: 'removed' })
+      .eq('id', membershipId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
   }
 };

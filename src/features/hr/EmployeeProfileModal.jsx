@@ -38,6 +38,22 @@ export const EmployeeProfileModal = ({ employee, departments, employees, isAdmin
     }
   };
 
+  const handleRemove = async () => {
+    if (!isAdmin) return;
+    if (!window.confirm(`Are you sure you want to remove ${employee.fullName || employee.email}? This will revoke their access to the workspace.`)) return;
+    
+    try {
+      setLoading(true);
+      setError(null);
+      await hrService.removeEmployee(employee.membershipId);
+      onUpdate();
+      onClose();
+    } catch (err) {
+      setError(err.message);
+      setLoading(false);
+    }
+  };
+
   const potentialManagers = employees.filter(e => e.id !== employee.id); // Cannot manage self
 
   return (
@@ -131,13 +147,22 @@ export const EmployeeProfileModal = ({ employee, departments, employees, isAdmin
         </div>
 
         {/* Footer */}
-        <div className="px-xl py-lg border-t border-outline-variant bg-surface-container flex justify-end gap-md mt-auto">
-          <Button variant="outline" onClick={onClose} disabled={loading} className="h-10">Close</Button>
-          {isAdmin && (
-            <Button type="submit" form="hr-form" disabled={loading || !isDirty} className="h-10">
-              {loading ? 'Saving...' : 'Save Changes'}
-            </Button>
-          )}
+        <div className="px-xl py-lg border-t border-outline-variant bg-surface-container flex justify-between gap-md mt-auto">
+          <div>
+            {isAdmin && employee.role !== 'owner' && (
+              <Button type="button" variant="outline" onClick={handleRemove} disabled={loading} className="h-10 text-error border-error/50 hover:bg-error-container hover:border-error">
+                Remove Employee
+              </Button>
+            )}
+          </div>
+          <div className="flex gap-md">
+            <Button variant="outline" onClick={onClose} disabled={loading} className="h-10">Close</Button>
+            {isAdmin && (
+              <Button type="submit" form="hr-form" disabled={loading || !isDirty} className="h-10">
+                {loading ? 'Saving...' : 'Save Changes'}
+              </Button>
+            )}
+          </div>
         </div>
 
       </div>

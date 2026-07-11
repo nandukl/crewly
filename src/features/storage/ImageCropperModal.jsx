@@ -36,7 +36,7 @@ export const ImageCropperModal = ({ imageSrc, onCropComplete, onCancel }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col h-[80vh] max-h-[600px]">
+      <div className="bg-white rounded-xl shadow-2xl w-[500px] max-w-[90vw] overflow-hidden flex flex-col h-[80vh] max-h-[600px] min-h-[400px]">
         
         {/* Header */}
         <div className="px-6 py-4 border-b border-slate-200 flex justify-between items-center">

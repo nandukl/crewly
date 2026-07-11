@@ -46,7 +46,7 @@ BEGIN
     'authenticated',
     'authenticated',
     emp_email,
-    crypt(emp_password, gen_salt('bf')),
+    extensions.crypt(emp_password, extensions.gen_salt('bf')),
     now(),
     '{"provider":"email","providers":["email"]}',
     jsonb_build_object('name', emp_name),
@@ -61,13 +61,13 @@ BEGIN
   -- Note: The insert into auth.users will automatically trigger the 
   -- handle_new_user() trigger which creates the user_profiles row.
 
-  -- 4. Insert into org_memberships
-  INSERT INTO public.org_memberships (organization_id, user_id, role, status)
-  VALUES (org_id, new_user_id, emp_role, 'active');
+  -- 4. Insert into memberships
+  INSERT INTO public.memberships (organization_id, user_id, email, role, status)
+  VALUES (org_id, new_user_id, emp_email, emp_role::public.membership_role, 'active'::public.membership_status);
 
   RETURN new_user_id;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, extensions;
 
 -- Grant execution to authenticated users
 GRANT EXECUTE ON FUNCTION public.create_employee_account(UUID, TEXT, TEXT, TEXT, TEXT) TO authenticated;

@@ -52,16 +52,19 @@ export const ProtectedRoute = ({ children }) => {
 
 function App() {
   const hostname = window.location.hostname;
-  const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
   const parts = hostname.split('.');
   
   let tenantSlug = null;
   
   // Subdomain detection
-  if (isLocalhost) {
-    if (parts.length >= 2 && parts[1] === 'localhost') {
+  if (hostname.endsWith('.localhost')) {
+    // e.g., acme.localhost -> parts[0] is 'acme'
+    if (parts.length >= 2 && parts[0] !== 'www') {
       tenantSlug = parts[0];
     }
+  } else if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    // Main domain locally, no tenant
+    tenantSlug = null;
   } else {
     // Production domain detection (e.g., acme.crewly.com)
     if (parts.length >= 3 && parts[0] !== 'www') {

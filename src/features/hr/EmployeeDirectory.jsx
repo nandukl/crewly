@@ -61,7 +61,7 @@ export const EmployeeDirectory = () => {
 
       <div className="bg-white shadow overflow-hidden sm:rounded-lg">
         <ul className="divide-y divide-slate-200">
-          {employees.map((emp) => (
+          {employees.filter(emp => emp.status !== 'removed').map((emp) => (
             <li key={emp.id} className="hover:bg-slate-50 transition-colors cursor-pointer" onClick={() => setSelectedEmployee(emp)}>
               <div className="px-4 py-4 sm:px-6 flex items-center justify-between">
                 <div className="flex items-center">
@@ -75,7 +75,7 @@ export const EmployeeDirectory = () => {
                     )}
                   </div>
                   <div className="ml-4">
-                    <div className="text-sm font-medium text-blue-600 truncate">{emp.fullName || 'Pending Member'}</div>
+                    <div className="text-sm font-medium text-blue-600 truncate">{emp.fullName || (emp.status === 'pending_invitation' ? 'Pending Member' : emp.email?.split('@')[0])}</div>
                     <div className="text-sm text-slate-500 truncate">{emp.email}</div>
                   </div>
                 </div>
@@ -83,7 +83,7 @@ export const EmployeeDirectory = () => {
                   <div className="text-sm text-slate-900">{emp.designation || 'No Designation'}</div>
                   <div className="text-sm text-slate-500 flex items-center gap-2">
                     {emp.departmentName || 'No Department'}
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${emp.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${emp.status === 'active' ? 'bg-green-100 text-green-800' : emp.status === 'removed' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}`}>
                       {emp.status}
                     </span>
                   </div>

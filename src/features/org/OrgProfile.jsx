@@ -175,6 +175,7 @@ export const OrgProfile = () => {
                     <FileUploader 
                       orgId={activeOrganization.id} 
                       featureName="logos" 
+                      bucketName="public_assets"
                       accept="image/*"
                       onUploadComplete={(data) => {
                         setValue('logo_url', data.file_path, { shouldDirty: true });

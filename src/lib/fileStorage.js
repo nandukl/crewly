@@ -5,7 +5,7 @@ export const fileStorage = {
    * Uploads a file to Supabase Storage and records metadata in Postgres.
    * Path format: {organization_id}/{feature_name}/{timestamp_filename}
    */
-  async uploadFile(file, orgId, featureName = 'general') {
+  async uploadFile(file, orgId, featureName = 'general', bucketName = 'workspaces') {
     try {
       const { data: userData } = await supabase.auth.getUser();
       if (!userData?.user) throw new Error('Not authenticated');
@@ -16,7 +16,7 @@ export const fileStorage = {
 
       // 1. Upload to Storage Bucket
       const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('workspaces')
+        .from(bucketName)
         .upload(filePath, file, {
           cacheControl: '3600',
           upsert: false

@@ -102,6 +102,7 @@ export const OrgProvider = ({ children, forcedOrgId = null }) => {
       activeModules,
       switchOrganization,
       loading,
+      isTenant: !!forcedOrgId,
       refreshModules: () => fetchActiveModules(activeOrgId),
       refreshOrganizations: async () => {
          const orgs = await orgService.getOrganizations();

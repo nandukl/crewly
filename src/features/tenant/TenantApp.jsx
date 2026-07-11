@@ -15,9 +15,7 @@ export const TenantApp = ({ slug }) => {
     const fetchTenant = async () => {
       try {
         const { data, error } = await supabase
-          .from('organizations')
-          .select('*')
-          .eq('slug', slug)
+          .rpc('get_public_org_by_slug', { p_slug: slug })
           .single();
 
         if (error || !data) {

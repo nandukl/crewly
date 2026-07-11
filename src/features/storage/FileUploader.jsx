@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { fileStorage } from '../../lib/fileStorage';
 import { ImageCropperModal } from './ImageCropperModal';
 
-export const FileUploader = ({ orgId, featureName, onUploadComplete, accept = "*", maxSizeMB = 10, enableCrop = true }) => {
+export const FileUploader = ({ orgId, featureName, bucketName = 'workspaces', onUploadComplete, accept = "*", maxSizeMB = 10, enableCrop = true }) => {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
   const [cropImageSrc, setCropImageSrc] = useState(null);
@@ -41,7 +41,7 @@ export const FileUploader = ({ orgId, featureName, onUploadComplete, accept = "*
       ? fileToUpload 
       : new File([fileToUpload], originalFile?.name || 'cropped-image.jpg', { type: fileToUpload.type || 'image/jpeg' });
 
-    const { data, error: uploadError } = await fileStorage.uploadFile(fileForUpload, orgId, featureName);
+    const { data, error: uploadError } = await fileStorage.uploadFile(fileForUpload, orgId, featureName, bucketName);
     
     setUploading(false);
     

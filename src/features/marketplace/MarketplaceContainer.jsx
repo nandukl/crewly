@@ -58,7 +58,7 @@ export const MarketplaceContainer = () => {
   return (
     <div className="max-w-[1200px] space-y-xl">
       <div>
-        <h2 className="font-headline-md text-headline-md text-on-surface">App Marketplace</h2>
+        <h2 className="font-headline-md text-headline-md text-on-surface">App Modules</h2>
         <p className="text-on-surface-variant font-body-md mt-1">
           Customize your workspace. Turn on the tools your team needs and turn off the ones they don't.
         </p>

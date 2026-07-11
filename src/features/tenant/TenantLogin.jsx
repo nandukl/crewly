@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
+import { authService } from '../../lib/authService';
+import { OrgLogo } from '../org/OrgLogo';
 
 export const TenantLogin = ({ organization }) => {
   const [email, setEmail] = useState('');
@@ -15,12 +17,7 @@ export const TenantLogin = ({ organization }) => {
     setError(null);
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) throw error;
+      await authService.login(email, password);
       
       // The user is logged in. 
       // The OrgContext (loaded in /dashboard) will enforce that they actually belong to this organization.
@@ -33,19 +30,17 @@ export const TenantLogin = ({ organization }) => {
   };
 
   return (
-    <div className="min-h-screen bg-surface flex font-body-md">
+    <div className="min-h-screen bg-surface grid grid-cols-1 lg:grid-cols-2 font-body-md">
       {/* Left side: Branding */}
-      <div className="hidden lg:flex flex-1 flex-col justify-center px-12 bg-surface-container-lowest border-r border-outline-variant relative overflow-hidden">
+      <div className="hidden lg:flex flex-col justify-center px-12 xl:px-24 bg-surface-container-lowest border-r border-outline-variant relative overflow-hidden">
         <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-primary/5 blur-[120px] rounded-full transform translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
         
-        <div className="max-w-md relative z-10">
-          {organization.logo_url ? (
-            <img src={organization.logo_url} alt={organization.name} className="h-16 w-16 object-cover rounded-xl shadow-sm mb-6 bg-white" />
-          ) : (
-            <div className="w-16 h-16 bg-primary-container text-on-primary-container rounded-xl flex items-center justify-center mb-6 shadow-sm">
-              <span className="font-headline-md font-bold">{organization.name.charAt(0)}</span>
-            </div>
-          )}
+        <div className="w-full min-w-[400px] max-w-xl relative z-10">
+          <OrgLogo 
+            logoUrl={organization.logo_url} 
+            alt={organization.name} 
+            className="h-16 w-16 rounded-xl shadow-sm mb-6 bg-white object-cover" 
+          />
           <h1 className="font-headline-lg text-4xl font-bold text-on-surface mb-4">
             Welcome to {organization.name}
           </h1>
@@ -56,18 +51,16 @@ export const TenantLogin = ({ organization }) => {
       </div>
 
       {/* Right side: Login Form */}
-      <div className="flex-1 flex flex-col justify-center px-8 sm:px-12 lg:px-24 bg-surface relative">
+      <div className="flex flex-col justify-center px-8 sm:px-12 lg:px-24 bg-surface relative">
         <div className="w-full max-w-[400px] mx-auto">
           {/* Mobile logo */}
           <div className="lg:hidden flex items-center gap-3 mb-8">
-            {organization.logo_url ? (
-              <img src={organization.logo_url} alt={organization.name} className="h-10 w-10 object-cover rounded-lg shadow-sm" />
-            ) : (
-              <div className="w-10 h-10 bg-primary-container text-on-primary-container rounded-lg flex items-center justify-center shadow-sm">
-                <span className="font-title-md font-bold">{organization.name.charAt(0)}</span>
-              </div>
-            )}
-            <span className="font-headline-sm font-bold text-on-surface">{organization.name}</span>
+            <OrgLogo 
+              logoUrl={organization.logo_url} 
+              alt={organization.name} 
+              className="h-10 w-10 rounded-lg shadow-sm object-cover flex-shrink-0" 
+            />
+            <span className="font-headline-sm font-bold text-on-surface truncate">{organization.name}</span>
           </div>
 
           <h2 className="font-headline-md text-2xl font-bold text-on-surface mb-2">Sign In</h2>
