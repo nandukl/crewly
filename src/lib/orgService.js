@@ -20,6 +20,7 @@ export const orgService = {
           *,
           memberships!inner(
             *,
+            employee_profiles!employee_profiles_membership_id_fkey(id),
             membership_custom_roles(
               custom_role_id,
               custom_roles(name)
@@ -35,8 +36,9 @@ export const orgService = {
     }
   },
 
-  createOrganization: async (name, slug) => {
+  createOrganization: async (orgData) => {
     try {
+      const { name, slug, industry, size, locale, timezone, currency } = orgData;
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
@@ -58,7 +60,12 @@ export const orgService = {
         p_name: name,
         p_slug: slug,
         p_user_id: user.id,
-        p_email: user.email
+        p_email: user.email,
+        p_industry: industry || null,
+        p_size: size || null,
+        p_locale: locale || null,
+        p_timezone: timezone || null,
+        p_currency: currency || null
       });
 
       if (rpcError) throw rpcError;
@@ -100,6 +107,20 @@ export const orgService = {
       return updatedOrg;
     } catch (error) {
       throw formatError(error, 'Failed to update organization', 'ORG_UPDATE_ERROR');
+    }
+  },
+
+  completeOnboarding: async (orgId) => {
+    try {
+      const { error } = await supabase.rpc('complete_organization_onboarding', {
+        p_org_id: orgId
+      });
+
+      if (error) throw error;
+      
+      return { success: true };
+    } catch (error) {
+      throw formatError(error, 'Failed to complete onboarding', 'ONBOARDING_ERROR');
     }
   },
 

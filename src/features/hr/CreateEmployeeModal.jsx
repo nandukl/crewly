@@ -44,40 +44,19 @@ export const CreateEmployeeModal = ({ activeOrganization, onClose, onSuccess }) 
       if (rpcError) throw rpcError;
 
       // 2. Send email via Resend
-      try {
-        const res = await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_RESEND_API_KEY}`
-          },
-          body: JSON.stringify({
-            from: 'Crewly <onboarding@resend.dev>',
-            to: [formData.email],
-            subject: `Welcome to ${activeOrganization.name} on Crewly`,
-            html: `
-              <div style="font-family: sans-serif; max-w: 600px; margin: 0 auto;">
-                <h2>Welcome to ${activeOrganization.name}!</h2>
-                <p>An administrator has created a workspace account for you.</p>
-                <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                  <p style="margin: 0 0 10px 0;"><strong>Your Login URL:</strong></p>
-                  <p style="margin: 0 0 20px 0;"><a href="http://${activeOrganization.slug}.localhost:5173/login">http://${activeOrganization.slug}.localhost:5173/login</a></p>
-                  
-                  <p style="margin: 0 0 10px 0;"><strong>Email:</strong> ${formData.email}</p>
-                  <p style="margin: 0 0 0 0;"><strong>Temporary Password:</strong> ${formData.password}</p>
-                </div>
-                <p>Please log in and change your password immediately.</p>
-              </div>
-            `
-          })
-        });
-        
-        if (!res.ok) {
-          console.error("Failed to send email via Resend:", await res.text());
+      const loginUrl = `http://${activeOrganization.slug}.localhost:5173/login`;
+      const { error: fnError } = await supabase.functions.invoke('dispatch-notification', {
+        body: {
+          type: 'employee_welcome',
+          recipient_email: formData.email,
+          organization_id: activeOrganization.id,
+          title: `Welcome to ${activeOrganization.name} on Crewly`,
+          message: `Login URL: ${loginUrl}\nEmail: ${formData.email}\nTemporary Password: ${formData.password}\n\nPlease log in and change your password immediately.`,
+          action_url: loginUrl,
+          channels: ['email']
         }
-      } catch (emailErr) {
-        console.error("Email sending failed:", emailErr);
-      }
+      });
+      if (fnError) console.error('Failed to dispatch welcome email:', fnError);
 
       // Success! Show the password to the admin so they can share it
       setGeneratedPassword(formData.password);

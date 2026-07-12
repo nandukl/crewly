@@ -216,5 +216,62 @@ export const payrollService = {
       console.error('Error finalizing payroll run:', err);
       return { error_code: 'FINALIZE_ERROR', message: err.message };
     }
+  },
+
+  // ----------------------------------------
+  // Math & Logic Utilities
+  // ----------------------------------------
+  calculatePayrollPreview(profile, month, year) {
+    let base = Number(profile.base_amount || 0);
+    
+    // Proration based on Date of Joining
+    let prorationFactor = 1;
+    if (profile.employee?.date_of_joining) {
+      const doj = new Date(profile.employee.date_of_joining);
+      const periodStart = new Date(year, month - 1, 1);
+      const periodEnd = new Date(year, month, 0); // Last day of month
+      
+      if (doj > periodEnd) {
+        prorationFactor = 0; // Joined after this month
+      } else if (doj > periodStart) {
+        // Joined mid-month
+        const daysInMonth = periodEnd.getDate();
+        const daysWorked = daysInMonth - doj.getDate() + 1;
+        prorationFactor = daysWorked / daysInMonth;
+      }
+    }
+    
+    base = base * prorationFactor;
+
+    let allowanceTotal = 0;
+    let deductionTotal = 0;
+
+    (profile.allowances || []).forEach(item => {
+      if (item.type === 'fixed') {
+        allowanceTotal += Number(item.amount || 0) * prorationFactor;
+      } else if (item.type === 'percentage') {
+        allowanceTotal += base * (Number(item.percentage || 0) / 100);
+      }
+    });
+
+    (profile.deductions || []).forEach(item => {
+      if (item.type === 'fixed') {
+        deductionTotal += Number(item.amount || 0) * prorationFactor;
+      } else if (item.type === 'percentage') {
+        deductionTotal += base * (Number(item.percentage || 0) / 100);
+      }
+    });
+
+    const grossPay = base + allowanceTotal;
+    const netPay = grossPay - deductionTotal;
+
+    return {
+      baseAmount: base,
+      allowanceTotal,
+      deductionTotal,
+      grossPay,
+      netPay,
+      prorationFactor
+    };
   }
 };

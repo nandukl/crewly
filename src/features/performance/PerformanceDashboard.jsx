@@ -3,8 +3,11 @@ import { supabase } from '../../lib/supabaseClient';
 import { useOrg } from '../org/OrgContext';
 import { ManageReviewCycle } from './ManageReviewCycle';
 
+import { useSubscriptionGate } from '../billing/useSubscriptionGate';
+
 export const PerformanceDashboard = () => {
   const { activeOrganization } = useOrg();
+  const { checkWriteAccess } = useSubscriptionGate();
   const [cycles, setCycles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -39,6 +42,7 @@ export const PerformanceDashboard = () => {
 
   const handleCreate = async (e) => {
     e.preventDefault();
+    if (!checkWriteAccess()) return;
     if (!activeOrganization) return;
     
     const { error } = await supabase

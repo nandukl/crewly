@@ -1,7 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0"
-
-const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
+import { sendEmail } from "../shared/emailProvider.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -50,35 +49,22 @@ serve(async (req) => {
       }
     }
 
-    // 2. Handle Email Dispatch (via Resend)
+    // 2. Handle Email Dispatch
     if (channels.includes('email') && recipient_email) {
-      if (RESEND_API_KEY) {
-        // Construct basic HTML email based on type
-        let htmlContent = `<h2>${title}</h2><p>${message}</p>`
-        if (action_url) {
-           htmlContent += `<br/><a href="${action_url}" style="padding: 10px 20px; background-color: #2563EB; color: white; text-decoration: none; border-radius: 5px;">View Action</a>`
-        }
+      // Construct basic HTML email based on type
+      let htmlContent = `<h2>${title}</h2><p>${message}</p>`
+      if (action_url) {
+         htmlContent += `<br/><a href="${action_url}" style="padding: 10px 20px; background-color: #2563EB; color: white; text-decoration: none; border-radius: 5px;">View Action</a>`
+      }
 
-        const res = await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${RESEND_API_KEY}`
-          },
-          body: JSON.stringify({
-            from: 'Crewly Notifications <onboarding@resend.dev>',
-            to: [recipient_email],
-            subject: title,
-            html: htmlContent
-          })
-        })
+      const emailResult = await sendEmail({
+        to: recipient_email,
+        subject: title,
+        html: htmlContent
+      })
 
-        if (!res.ok) {
-          const resError = await res.text()
-          console.error('Resend API Error:', resError)
-        }
-      } else {
-        console.log(`[Email Stub] RESEND_API_KEY not configured. Would send email to ${recipient_email} with subject: ${title}`)
+      if (!emailResult.success) {
+        console.error('Email Dispatch Error:', emailResult.error)
       }
     }
 

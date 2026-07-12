@@ -15,6 +15,7 @@ import { AuditLogViewer } from '../audit/AuditLogViewer';
 import { OrgLogo } from './OrgLogo';
 import { EmployeeDirectory } from '../hr/EmployeeDirectory';
 import { EmployeeHome } from '../hr/EmployeeHome';
+import { AdminHome } from '../tenant/AdminHome';
 
 import { AttendanceContainer } from '../attendance/AttendanceContainer';
 import { LeaveContainer } from '../leave/LeaveContainer';
@@ -27,12 +28,12 @@ import { InventoryContainer } from '../inventory/InventoryContainer';
 import { FinanceContainer } from '../finance/FinanceContainer';
 import { AnalyticsContainer } from '../analytics/AnalyticsContainer';
 import { MarketplaceContainer } from '../marketplace/MarketplaceContainer';
+import { BillingDashboard } from '../billing/BillingDashboard';
 
 export const OrgDashboard = () => {
-  const { organizations, activeOrganization, currentMembership, activeModules, loading, isTenant } = useOrg();
+  const { organizations, activeOrganization, currentMembership, activeModules, loading, isTenant, subscriptionStatus } = useOrg();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('general');
-  const [billingStatus, setBillingStatus] = useState(null);
+  const [activeTab, setActiveTab] = useState('home');
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -43,11 +44,16 @@ export const OrgDashboard = () => {
   }, []);
 
   const isAdmin = currentMembership?.role === 'owner' || currentMembership?.role === 'org_admin';
+  const isOwner = currentMembership?.role === 'owner';
+  const isManager = currentMembership?.role === 'manager';
+  
+  const canSeeAnalytics = isAdmin || isManager;
+  const canSeeDirectory = isAdmin || isManager;
 
   const allTabs = [
-    { id: 'general', label: isAdmin ? 'General' : 'My Dashboard' },
-    ...(isAdmin ? [{ id: 'analytics', label: 'Analytics' }] : []),
-    ...(isAdmin ? [{ id: 'directory', label: 'Directory' }] : []),
+    { id: 'home', label: 'Home' },
+    ...(canSeeAnalytics ? [{ id: 'analytics', label: 'Analytics' }] : []),
+    ...(canSeeDirectory ? [{ id: 'directory', label: 'Directory' }] : []),
     { id: 'attendance', label: 'Attendance' },
     { id: 'leave', label: 'Leave' },
     { id: 'payroll', label: 'Payroll' },
@@ -62,7 +68,8 @@ export const OrgDashboard = () => {
     ...(isAdmin ? [{ id: 'structure', label: 'Structure' }] : []),
     ...(isAdmin ? [{ id: 'marketplace', label: 'App Modules' }] : []),
     ...(isAdmin ? [{ id: 'audit', label: 'Audit Logs' }] : []),
-    ...(isSuperAdmin ? [{ id: 'devtools', label: 'Dev Tools (Billing)' }] : [])
+    ...(isAdmin ? [{ id: 'settings', label: 'Org Settings' }] : []),
+    ...(isOwner ? [{ id: 'billing', label: 'Billing & Subscription' }] : [])
   ];
 
   // Filter tabs based on activeModules from the context
@@ -81,14 +88,6 @@ export const OrgDashboard = () => {
       navigate('/onboarding');
     }
   }, [organizations, loading, navigate, isTenant]);
-
-  useEffect(() => {
-    if (activeOrganization?.id) {
-      billingService.getSubscriptionStatus(activeOrganization.id).then(({ data }) => {
-        if (data) setBillingStatus(data.status);
-      });
-    }
-  }, [activeOrganization?.id, activeTab]);
 
   if (loading) return <div className="p-8">Loading workspace...</div>;
   if (organizations.length === 0) {
@@ -118,17 +117,10 @@ export const OrgDashboard = () => {
           >
             <span className="material-symbols-outlined">{isMobileMenuOpen ? 'close' : 'menu'}</span>
           </button>
-          <span className="font-headline-md text-headline-md font-bold text-on-surface">{isTenant ? activeOrganization?.name : 'Crewly'}</span>
+          <span className="font-headline-md text-headline-md font-bold text-on-surface mr-4 hidden md:block">{isTenant ? activeOrganization?.name : 'Crewly'}</span>
+          <OrgSwitcher />
         </div>
         <div className="flex items-center gap-sm md:gap-md">
-          {isSuperAdmin && (
-            <button 
-              onClick={() => navigate('/admin')} 
-              className="text-xs font-bold text-secondary hover:text-blue-700 bg-surface-container-high px-3 py-1.5 rounded-md border border-outline-variant transition-colors"
-            >
-              Platform Admin
-            </button>
-          )}
           <div className="flex items-center gap-sm text-secondary">
             <NotificationBell />
             <button onClick={() => supabase.auth.signOut()} className="p-xs hover:bg-surface-container-high rounded-full transition-colors" title="Sign Out">
@@ -179,7 +171,7 @@ export const OrgDashboard = () => {
           {tabs.map((tab) => {
             const isActive = activeTab === tab.id;
             let icon = 'label';
-            if (tab.id === 'general') icon = 'business';
+            if (tab.id === 'home') icon = 'home';
             if (tab.id === 'analytics') icon = 'bar_chart';
             if (tab.id === 'directory') icon = 'contacts';
             if (tab.id === 'attendance') icon = 'event_available';
@@ -196,7 +188,8 @@ export const OrgDashboard = () => {
             if (tab.id === 'structure') icon = 'account_tree';
             if (tab.id === 'marketplace') icon = 'storefront';
             if (tab.id === 'audit') icon = 'history';
-            if (tab.id === 'devtools') icon = 'build';
+            if (tab.id === 'settings') icon = 'settings';
+            if (tab.id === 'billing') icon = 'credit_card';
 
             return (
               <button
@@ -229,8 +222,9 @@ export const OrgDashboard = () => {
       {/* Main Content Canvas */}
       <main className="flex-1 ml-0 md:ml-64 mt-[48px] p-4 md:p-8 bg-surface overflow-y-auto">
         <div className="max-w-7xl mx-auto pb-24">
-          {billingStatus && <BillingStatusBanner status={billingStatus} />}
-          {activeTab === 'general' && (isAdmin ? <OrgProfile /> : <EmployeeHome />)}
+          {subscriptionStatus && <BillingStatusBanner status={subscriptionStatus} />}
+          {activeTab === 'home' && (isAdmin ? <AdminHome /> : <EmployeeHome />)}
+          {activeTab === 'settings' && <OrgProfile />}
           {activeTab === 'analytics' && <AnalyticsContainer />}
           {activeTab === 'directory' && <EmployeeDirectory />}
           {activeTab === 'attendance' && <AttendanceContainer />}
@@ -247,6 +241,7 @@ export const OrgDashboard = () => {
           {activeTab === 'structure' && <StructureBuilder />}
           {activeTab === 'marketplace' && <MarketplaceContainer />}
           {activeTab === 'audit' && <AuditLogViewer />}
+          {activeTab === 'billing' && <BillingDashboard />}
           {activeTab === 'devtools' && <SuperAdminBillingOverride orgId={activeOrganization?.id} />}
         </div>
       </main>

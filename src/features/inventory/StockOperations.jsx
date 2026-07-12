@@ -67,7 +67,7 @@ export const StockOperations = () => {
       type: formData.type,
       reference_number: formData.reference_number || null,
       notes: formData.notes || null,
-      created_by: currentMembership.user_id,
+      created_by: currentMembership.employee_profiles?.[0]?.id,
       from_location_id: formData.from_location_id || null,
       to_location_id: formData.to_location_id || null
     };

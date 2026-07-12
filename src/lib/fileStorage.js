@@ -24,12 +24,14 @@ export const fileStorage = {
 
       if (uploadError) throw uploadError;
 
+      const { data: currentEmployeeId } = await supabase.rpc('get_current_employee_id', { p_org_id: orgId });
+
       // 2. Create DB Record
       const { data: record, error: dbError } = await supabase
         .from('file_records')
         .insert({
           organization_id: orgId,
-          uploaded_by: userData.user.id,
+          uploaded_by: currentEmployeeId,
           feature_name: featureName,
           file_name: file.name,
           file_path: uploadData.path,

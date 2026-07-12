@@ -98,7 +98,7 @@ export const EmployeeHome = () => {
             </div>
           </div>
 
-          {/* Today's Overview */}
+          {/* Today's Overview (Personal) */}
           <div className="bg-surface-container-lowest rounded-2xl p-6 shadow-sm border border-outline-variant">
              <h2 className="text-title-lg font-bold text-on-surface mb-6 flex items-center gap-2">
               <span className="material-symbols-outlined text-secondary">monitoring</span>
@@ -139,7 +139,7 @@ export const EmployeeHome = () => {
           <div className="bg-surface-container-lowest rounded-2xl p-6 shadow-sm border border-outline-variant">
             <h2 className="text-title-lg font-bold text-on-surface mb-6 flex items-center gap-2">
               <span className="material-symbols-outlined text-tertiary">beach_access</span>
-              Time Off
+              My Time Off
             </h2>
             <div className="space-y-4">
               <div className="flex items-center justify-between p-3 rounded-lg bg-surface-container-low hover:bg-surface-container transition-colors">
@@ -180,7 +180,7 @@ export const EmployeeHome = () => {
           <div className="bg-surface-container-lowest rounded-2xl p-6 shadow-sm border border-outline-variant">
             <h2 className="text-title-lg font-bold text-on-surface mb-6 flex items-center gap-2">
               <span className="material-symbols-outlined text-warning">celebration</span>
-              Upcoming
+              My Upcoming
             </h2>
             
             <div className="space-y-0 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-outline-variant before:to-transparent">

@@ -34,10 +34,10 @@ export const MarketplaceContainer = () => {
     setLoading(true);
     try {
       if (currentlyActive) {
-        // Deactivate: either set is_active=false or delete row
+        // Deactivate: set is_active=false
         await supabase
           .from('org_module_activations')
-          .delete()
+          .update({ is_active: false })
           .match({ organization_id: activeOrganization.id, module_key: moduleId });
       } else {
         // Activate: insert row

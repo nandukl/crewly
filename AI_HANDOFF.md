@@ -44,8 +44,9 @@ This document serves as the absolute source of truth for the project's current s
 - Handled frontend relational joining for `user_profiles` to bypass Supabase schema cache limitations.
 
 ### Module 7 to 15: Core Operational Modules
-- Built comprehensive modules for **Attendance**, **Payroll**, **Performance Reviews**, **Finances**, and **Analytics**.
-- Each module has dedicated database schemas, RLS policies, and extensive React UI containers.
+- Built comprehensive modules for **Attendance**, **Payroll**, **Performance Reviews**, and **Finances**.
+- Each of these has dedicated database schemas, RLS policies, and extensive React UI containers.
+- **Analytics** module built as a read-only dashboard that aggregates data from other modules (Auth, Finance, Help Desk) without requiring its own dedicated schema.
 
 ### Module 17: Marketplace (App Store)
 - Implemented an internal App Store for Organization Admins to discover, activate, and deactivate modular features.

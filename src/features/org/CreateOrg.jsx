@@ -11,10 +11,14 @@ import en from '../../locales/en.json';
 const schema = z.object({
   name: z.string().min(1, 'Organization Name is required'),
   slug: z.string().min(1, 'Slug is required').regex(/^[a-z0-9-]+$/, 'Slug must contain only lowercase letters, numbers, and hyphens'),
+  industry: z.string().optional(),
+  size: z.string().optional(),
+  locale: z.string().optional(),
+  currency: z.string().optional(),
 });
 
 export const CreateOrg = () => {
-  const { register, handleSubmit, formState: { errors } } = useForm({
+  const { register, handleSubmit, watch, setValue, formState: { errors, dirtyFields } } = useForm({
     resolver: zodResolver(schema),
   });
   const [error, setError] = useState(null);
@@ -24,6 +28,15 @@ export const CreateOrg = () => {
   const { refreshOrganizations, switchOrganization } = useOrg();
   const navigate = useNavigate();
   const t = en.org.create;
+
+  const nameValue = watch('name');
+  const slugValue = watch('slug');
+
+  useEffect(() => {
+    if (!dirtyFields.slug && nameValue) {
+      setValue('slug', nameValue.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''), { shouldValidate: true });
+    }
+  }, [nameValue, dirtyFields.slug, setValue]);
 
   useEffect(() => {
     const fetchInvites = async () => {
@@ -57,27 +70,41 @@ export const CreateOrg = () => {
     try {
       setLoading(true);
       setError(null);
-      const newOrg = await orgService.createOrganization(data.name, data.slug);
+      
+      const newOrg = await orgService.createOrganization({
+        name: data.name,
+        slug: data.slug,
+        industry: data.industry,
+        size: data.size,
+        locale: data.locale,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        currency: data.currency
+      });
+
       await refreshOrganizations();
-      await switchOrganization(newOrg.id);
-      navigate('/dashboard');
+      
+      const hostname = window.location.hostname;
+      if (hostname === 'localhost' || hostname === '127.0.0.1') {
+         window.location.href = `http://${newOrg.slug}.localhost:${window.location.port}/dashboard`;
+      } else {
+         window.location.href = `https://${newOrg.slug}.crewly.com/dashboard`;
+      }
     } catch (err) {
       setError(err.message);
-    } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+    <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-lg mx-auto">
         <h2 className="mt-6 text-center text-3xl font-extrabold text-slate-900">{t.title}</h2>
         <p className="mt-2 text-center text-sm text-slate-600">
           {t.subtitle}
         </p>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+      <div className="mt-8 w-full max-w-lg mx-auto">
         {pendingInvites.length > 0 && (
           <div className="bg-white py-6 px-4 shadow sm:rounded-lg sm:px-10 mb-6 border-2 border-blue-500">
             <h3 className="text-lg font-medium text-slate-900 mb-4">You have pending invitations</h3>
@@ -130,23 +157,78 @@ export const CreateOrg = () => {
 
             <div>
               <label htmlFor="slug" className="block text-sm font-medium text-slate-700">
-                {t.slugLabel}
+                Workspace URL
               </label>
-              <p className="text-xs text-slate-500 mb-1">{t.slugHelp}</p>
-              <div className="mt-1">
+              <div className="mt-1 flex rounded-md shadow-sm">
                 <input
                   id="slug"
                   type="text"
                   {...register('slug')}
-                  className="appearance-none block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
+                  className="flex-1 min-w-0 block w-full px-3 py-2 rounded-none rounded-l-md border border-slate-300 focus:ring-primary focus:border-primary sm:text-sm"
                 />
-                {errors.slug && <p className="mt-2 text-sm text-red-600">{errors.slug.message}</p>}
+                <span className="inline-flex items-center px-3 rounded-r-md border border-l-0 border-slate-300 bg-slate-50 text-slate-500 sm:text-sm">
+                  .crewly.com
+                </span>
+              </div>
+              {slugValue && (
+                <p className="mt-2 text-xs text-indigo-600 font-medium">
+                  Your workspace will be at <strong>{slugValue}.crewly.com</strong>
+                </p>
+              )}
+              {errors.slug && <p className="mt-2 text-sm text-red-600">{errors.slug.message}</p>}
+            </div>
+
+            <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-2">
+              <div>
+                <label className="block text-sm font-medium text-slate-700">Industry</label>
+                <select {...register('industry')} className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-slate-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md bg-white">
+                  <option value="">Select Industry</option>
+                  <option value="Technology">Technology</option>
+                  <option value="Retail">Retail</option>
+                  <option value="Healthcare">Healthcare</option>
+                  <option value="Manufacturing">Manufacturing</option>
+                  <option value="Finance">Finance</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700">Company Size</label>
+                <select {...register('size')} className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-slate-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md bg-white">
+                  <option value="">Select Size</option>
+                  <option value="1-10">1-10 employees</option>
+                  <option value="11-50">11-50 employees</option>
+                  <option value="51-200">51-200 employees</option>
+                  <option value="201-500">201-500 employees</option>
+                  <option value="500+">500+ employees</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700">Locale</label>
+                <select {...register('locale')} className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-slate-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md bg-white">
+                  <option value="">Select Locale</option>
+                  <option value="en-US">English (US)</option>
+                  <option value="en-GB">English (UK)</option>
+                  <option value="en-IN">English (India)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700">Default Currency</label>
+                <select {...register('currency')} className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-slate-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md bg-white">
+                  <option value="">Select Currency</option>
+                  <option value="USD">USD ($)</option>
+                  <option value="EUR">EUR (€)</option>
+                  <option value="GBP">GBP (£)</option>
+                  <option value="INR">INR (₹)</option>
+                </select>
               </div>
             </div>
 
-            <div>
+            <div className="pt-2">
               <Button type="submit" className="w-full flex justify-center py-2 px-4" disabled={loading}>
-                {loading ? 'Creating...' : t.submitButton}
+                {loading ? 'Creating workspace...' : 'Create workspace'}
               </Button>
             </div>
           </form>

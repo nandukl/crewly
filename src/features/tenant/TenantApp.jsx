@@ -2,9 +2,26 @@ import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
 import { ProtectedRoute } from '../../App';
-import { OrgProvider } from '../org/OrgContext';
+import { OrgProvider, useOrg } from '../org/OrgContext';
 import { OrgDashboard } from '../org/OrgDashboard';
 import { TenantLogin } from './TenantLogin';
+import { OnboardingWizard } from './OnboardingWizard';
+
+const DashboardInterceptor = () => {
+  const { activeOrganization } = useOrg();
+  if (activeOrganization && activeOrganization.onboarding_completed === false) {
+    return <Navigate to="/onboarding" replace />;
+  }
+  return <OrgDashboard />;
+};
+
+const OnboardingInterceptor = () => {
+  const { activeOrganization } = useOrg();
+  if (activeOrganization && activeOrganization.onboarding_completed === true) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  return <OnboardingWizard />;
+};
 
 export const TenantApp = ({ slug }) => {
   const [org, setOrg] = useState(null);
@@ -62,11 +79,19 @@ export const TenantApp = ({ slug }) => {
       <Routes>
         <Route path="/login" element={<TenantLogin organization={org} />} />
         
+        <Route path="/onboarding" element={
+          <ProtectedRoute>
+            <OrgProvider forcedOrgId={org.id}>
+              <OnboardingInterceptor />
+            </OrgProvider>
+          </ProtectedRoute>
+        } />
+        
         {/* Enforce that the user is logged in, and then load the OrgContext to enforce membership */}
         <Route path="/dashboard/*" element={
           <ProtectedRoute>
             <OrgProvider forcedOrgId={org.id}>
-              <OrgDashboard />
+              <DashboardInterceptor />
             </OrgProvider>
           </ProtectedRoute>
         } />

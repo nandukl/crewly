@@ -2,8 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import { useOrg } from '../org/OrgContext';
 
+import { useSubscriptionGate } from '../billing/useSubscriptionGate';
+
 export const ManageReviewCycle = ({ cycle, onBack }) => {
   const { activeOrganization } = useOrg();
+  const { checkWriteAccess } = useSubscriptionGate();
   const [members, setMembers] = useState([]);
   const [assignments, setAssignments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -34,7 +37,8 @@ export const ManageReviewCycle = ({ cycle, onBack }) => {
       const { data: reviewsData, error: revError } = await supabase
         .from('performance_reviews')
         .select('*')
-        .eq('cycle_id', cycle.id);
+        .eq('cycle_id', cycle.id)
+        .neq('status', 'Cancelled');
 
       if (revError) {
         console.error("Error fetching reviews", revError);
@@ -49,6 +53,7 @@ export const ManageReviewCycle = ({ cycle, onBack }) => {
   }, [activeOrganization, cycle]);
 
   const handleAssign = async (revieweeId, reviewerId) => {
+    if (!checkWriteAccess()) return;
     if (!reviewerId) {
       alert("Please select a reviewer");
       return;
@@ -75,9 +80,10 @@ export const ManageReviewCycle = ({ cycle, onBack }) => {
   };
 
   const handleRemove = async (reviewId) => {
+    if (!checkWriteAccess()) return;
     const { error } = await supabase
       .from('performance_reviews')
-      .delete()
+      .update({ status: 'Cancelled' })
       .eq('id', reviewId);
 
     if (error) {

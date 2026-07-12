@@ -42,7 +42,7 @@ serve(async (req) => {
   }
 
   try {
-    const { email, password } = await req.json();
+    const { email, password, fullName } = await req.json();
 
     if (!email || !password) {
       return new Response(JSON.stringify({ error: "Email and password required" }), {
@@ -103,7 +103,10 @@ serve(async (req) => {
     const { data, error } = await supabase.auth.admin.createUser({
       email,
       password,
-      email_confirm: false
+      email_confirm: false,
+      user_metadata: {
+        full_name: fullName
+      }
     });
 
     if (!error && resendApiKey) {

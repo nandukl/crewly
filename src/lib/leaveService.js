@@ -75,6 +75,8 @@ export const leaveService = {
   grantLeave: async (organizationId, employeeId, leaveTypeId, amount, description) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
+      const { data: currentEmployeeId } = await supabase.rpc('get_current_employee_id', { p_org_id: organizationId });
+
       const { data, error } = await supabase
         .from('leave_balance_transactions')
         .insert({
@@ -84,7 +86,7 @@ export const leaveService = {
           transaction_type: amount >= 0 ? 'Accrual' : 'Deduction', // Or Adjustment
           amount: amount,
           description: description,
-          created_by: user.id
+          created_by: currentEmployeeId
         })
         .select()
         .single();
@@ -267,6 +269,7 @@ export const leaveService = {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
+      
       const { data: request, error: fetchErr } = await supabase
         .from('leave_requests')
         .select('*')
@@ -275,11 +278,18 @@ export const leaveService = {
 
       if (fetchErr) throw fetchErr;
 
-      // In v1, cancel pending freely. Cancel approved requires restoring balance.
+      if (request.status !== 'Approved' && request.status !== 'Pending') throw new Error('Cannot cancel this request.');
+      if (request.employee_id !== user.id) {
+        // Technically admin can cancel too, but simplified for now
+      }
+
+      const { data: currentEmployeeId } = await supabase.rpc('get_current_employee_id', { p_org_id: request.organization_id });
+
       const { data, error } = await supabase
         .from('leave_requests')
         .update({
-          status: 'Cancelled'
+          status: 'Cancelled',
+          updated_at: new Date().toISOString()
         })
         .eq('id', requestId)
         .select()
@@ -287,8 +297,8 @@ export const leaveService = {
 
       if (error) throw error;
 
+      // 2. If it was approved, refund the balance
       if (request.status === 'Approved') {
-        // Restore balance
         await supabase
           .from('leave_balance_transactions')
           .insert({
@@ -299,7 +309,7 @@ export const leaveService = {
             amount: request.days_count, // Positive amount restores the deduction
             reference_id: requestId,
             description: 'Cancelled leave request restoration',
-            created_by: user.id
+            created_by: currentEmployeeId
           });
           
         // Note: Retracting attendance events is tricky (which days were marked 'On Leave'?)
@@ -315,8 +325,10 @@ export const leaveService = {
 
   // Internal helper to deduct balance and mark attendance
   _processApprovedLeave: async (requestData, userId) => {
+    const { data: currentEmployeeId } = await supabase.rpc('get_current_employee_id', { p_org_id: requestData.organization_id });
+    
     // 1. Deduct balance
-    await supabase
+    const { error: balanceErr } = await supabase
       .from('leave_balance_transactions')
       .insert({
         organization_id: requestData.organization_id,
@@ -326,7 +338,7 @@ export const leaveService = {
         amount: -Math.abs(requestData.days_count),
         reference_id: requestData.id,
         description: 'Leave request approved',
-        created_by: userId
+        created_by: currentEmployeeId
       });
 
     // 2. Mark Attendance for each day
@@ -348,5 +360,19 @@ export const leaveService = {
     }
     
     await auditLog.record('LEAVE_REQUEST_APPROVED', requestData.employee_id, { request_id: requestData.id });
+  },
+
+  // --- Math & Logic Utilities ---
+  calculateNewLeaveBalance: (currentBalance, transaction) => {
+    let amount = Number(transaction.amount || 0);
+    const type = transaction.transaction_type;
+
+    if (type === 'Deduction') {
+      amount = -Math.abs(amount); // Deductions should always subtract
+    } else if (type === 'Accrual') {
+      amount = Math.abs(amount); // Accruals should always add
+    } // Adjustment can be positive or negative
+
+    return Number(currentBalance || 0) + amount;
   }
 };

@@ -26,6 +26,7 @@ export const ReviewDetails = ({ review, onBack, isManager }) => {
         .from('performance_goals')
         .select('*')
         .eq('review_id', review.id)
+        .neq('status', 'deleted')
         .order('created_at', { ascending: true });
       
       if (!error && data) {
@@ -73,7 +74,7 @@ export const ReviewDetails = ({ review, onBack, isManager }) => {
   const handleRemoveGoal = async (goalId) => {
     const { error } = await supabase
       .from('performance_goals')
-      .delete()
+      .update({ status: 'deleted' })
       .eq('id', goalId);
 
     if (!error) {

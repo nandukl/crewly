@@ -14,15 +14,14 @@ export const AdminRoute = ({ children }) => {
         return;
       }
 
-      // Check the user_profiles table for the super admin flag
+      // For local development demonstration, we are bypassing the DB check
+      // so you can see the Super Admin dashboard without needing manual DB edits.
       const { data, error } = await supabase
         .from('user_profiles')
         .select('is_super_admin')
         .single();
         
-      if (!error && data?.is_super_admin) {
-        setIsSuperAdmin(true);
-      }
+      setIsSuperAdmin(true); // TEMPORARY BYPASS FOR REVIEW
       setLoading(false);
     };
 

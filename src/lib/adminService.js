@@ -29,12 +29,10 @@ export const adminService = {
       }
 
       // The subscriptions table already allows Super Admins to update any row due to the RLS policy defined in Module 2.
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('subscriptions')
         .update({ status, updated_at: new Date().toISOString(), updated_by: userData.user.id })
-        .eq('organization_id', orgId)
-        .select()
-        .single();
+        .eq('organization_id', orgId);
 
       if (error) throw error;
 
@@ -48,7 +46,7 @@ export const adminService = {
         orgId
       );
 
-      return { data };
+      return { success: true };
     } catch (err) {
       console.error('[AdminService] Error updating subscription:', err);
       return { error_code: 'UPDATE_FAILED', message: err.message };

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { orgService } from '../../lib/orgService';
 import { supabase } from '../../lib/supabaseClient';
+import { billingService } from '../../lib/billingService';
 
 const OrgContext = createContext(null);
 
@@ -10,6 +11,7 @@ export const OrgProvider = ({ children, forcedOrgId = null }) => {
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState(null);
   const [activeModules, setActiveModules] = useState([]);
+  const [subscriptionStatus, setSubscriptionStatus] = useState(null);
 
   useEffect(() => {
     const fetchOrgs = async () => {
@@ -74,6 +76,14 @@ export const OrgProvider = ({ children, forcedOrgId = null }) => {
 
   useEffect(() => {
     fetchActiveModules(activeOrgId);
+    
+    if (activeOrgId) {
+      billingService.getSubscriptionStatus(activeOrgId).then(({ data }) => {
+        if (data) setSubscriptionStatus(data.status);
+      });
+    } else {
+      setSubscriptionStatus(null);
+    }
   }, [activeOrgId]);
 
   const switchOrganization = async (orgId) => {
@@ -94,12 +104,18 @@ export const OrgProvider = ({ children, forcedOrgId = null }) => {
     m => m.status === 'active' && m.user_id === currentUser?.id
   );
 
+  const isSubscriptionLocked = subscriptionStatus === 'locked';
+  const isSubscriptionGracePeriod = subscriptionStatus === 'grace_period';
+
   return (
     <OrgContext.Provider value={{
       organizations,
       activeOrganization,
       currentMembership,
       activeModules,
+      subscriptionStatus,
+      isSubscriptionLocked,
+      isSubscriptionGracePeriod,
       switchOrganization,
       loading,
       isTenant: !!forcedOrgId,

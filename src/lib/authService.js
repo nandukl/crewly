@@ -75,10 +75,10 @@ export const authService = {
   /**
    * Signup utilizing the Edge Function to enforce server-side complexity
    */
-  signup: async (email, password) => {
+  signup: async (email, password, fullName) => {
     try {
       const { data, error } = await supabase.functions.invoke('auth-signup', {
-        body: { email, password }
+        body: { email, password, fullName }
       });
 
       if (error || (data && data.error)) {

@@ -1,6 +1,8 @@
 import React from 'react';
 
-export const Button = React.forwardRef(({ children, variant = 'primary', className = '', isLoading, ...props }, ref) => {
+import { WriteGate } from './WriteGate';
+
+export const Button = React.forwardRef(({ children, variant = 'primary', className = '', isLoading, actionType, ...props }, ref) => {
   const baseStyles = "inline-flex items-center justify-center py-md px-lg font-title-lg text-title-lg rounded-lg transition-all focus:outline-none focus-ring disabled:opacity-50 disabled:cursor-not-allowed";
   
   const variants = {
@@ -11,7 +13,7 @@ export const Button = React.forwardRef(({ children, variant = 'primary', classNa
     ghost: "text-on-surface-variant hover:bg-surface-container-low font-label-md text-label-md"
   };
 
-  return (
+  const buttonElement = (
     <button
       ref={ref}
       className={`${baseStyles} ${variants[variant]} ${className}`}
@@ -27,6 +29,12 @@ export const Button = React.forwardRef(({ children, variant = 'primary', classNa
       {children}
     </button>
   );
+
+  if (actionType === 'write') {
+    return <WriteGate>{buttonElement}</WriteGate>;
+  }
+
+  return buttonElement;
 });
 
 Button.displayName = 'Button';

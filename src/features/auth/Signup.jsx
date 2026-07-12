@@ -11,6 +11,7 @@ import en from '../../locales/en.json';
 import { authConfig } from '../../config/auth.config';
 
 const signupSchema = z.object({
+  fullName: z.string().min(2, 'Please enter your full name'),
   email: z.string().email('Please enter a valid email address'),
   password: z.string()
     .min(authConfig.passwordPolicy.minLength, `Password must be at least ${authConfig.passwordPolicy.minLength} characters`)
@@ -33,7 +34,7 @@ export const Signup = () => {
   const onSubmit = async (data) => {
     try {
       setServerError(null);
-      await authService.signup(data.email, data.password);
+      await authService.signup(data.email, data.password, data.fullName);
       setSuccess(true);
     } catch (error) {
       setServerError(error.message);
@@ -62,6 +63,14 @@ export const Signup = () => {
           </div>
         )}
         
+        <Input
+          label="Full Name"
+          type="text"
+          autoComplete="name"
+          error={errors.fullName?.message}
+          {...register('fullName')}
+        />
+
         <Input
           label={t.emailLabel}
           type="email"

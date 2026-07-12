@@ -58,17 +58,26 @@ function App() {
   
   // Subdomain detection
   if (hostname.endsWith('.localhost')) {
-    // e.g., acme.localhost -> parts[0] is 'acme'
-    if (parts.length >= 2 && parts[0] !== 'www') {
-      tenantSlug = parts[0];
+    let sub = hostname.replace('.localhost', '');
+    if (sub.startsWith('www.')) {
+      sub = sub.substring(4);
+    }
+    if (sub.length > 0) {
+      tenantSlug = sub;
     }
   } else if (hostname === 'localhost' || hostname === '127.0.0.1') {
     // Main domain locally, no tenant
     tenantSlug = null;
   } else {
     // Production domain detection (e.g., acme.crewly.com)
-    if (parts.length >= 3 && parts[0] !== 'www') {
-      tenantSlug = parts[0];
+    if (hostname.endsWith('.crewly.com')) {
+      let sub = hostname.replace('.crewly.com', '');
+      if (sub.startsWith('www.')) {
+        sub = sub.substring(4);
+      }
+      if (sub.length > 0) {
+        tenantSlug = sub;
+      }
     }
   }
 
