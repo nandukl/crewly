@@ -5,20 +5,16 @@ import * as z from 'zod';
 import { orgService } from '../../lib/orgService';
 import { useOrg } from './OrgContext';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '../../components/ui/Button';
 import en from '../../locales/en.json';
+import { AuthLayout } from '../auth/AuthLayout';
+import { Input } from '../../components/ui/Input';
 
 const schema = z.object({
-  name: z.string().min(1, 'Organization Name is required'),
-  slug: z.string().min(1, 'Slug is required').regex(/^[a-z0-9-]+$/, 'Slug must contain only lowercase letters, numbers, and hyphens'),
-  industry: z.string().optional(),
-  size: z.string().optional(),
-  locale: z.string().optional(),
-  currency: z.string().optional(),
+  name: z.string().min(1, 'Organization Name is required')
 });
 
 export const CreateOrg = () => {
-  const { register, handleSubmit, watch, setValue, formState: { errors, dirtyFields } } = useForm({
+  const { register, handleSubmit, watch, formState: { errors } } = useForm({
     resolver: zodResolver(schema),
   });
   const [error, setError] = useState(null);
@@ -29,14 +25,10 @@ export const CreateOrg = () => {
   const navigate = useNavigate();
   const t = en.org.create;
 
-  const nameValue = watch('name');
-  const slugValue = watch('slug');
-
-  useEffect(() => {
-    if (!dirtyFields.slug && nameValue) {
-      setValue('slug', nameValue.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''), { shouldValidate: true });
-    }
-  }, [nameValue, dirtyFields.slug, setValue]);
+  const nameValue = watch('name') || '';
+  
+  // Live generate the slug character by character based on name
+  const generatedSlug = nameValue.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
 
   useEffect(() => {
     const fetchInvites = async () => {
@@ -73,12 +65,8 @@ export const CreateOrg = () => {
       
       const newOrg = await orgService.createOrganization({
         name: data.name,
-        slug: data.slug,
-        industry: data.industry,
-        size: data.size,
-        locale: data.locale,
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        currency: data.currency
+        slug: generatedSlug,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
       });
 
       await refreshOrganizations();
@@ -96,144 +84,75 @@ export const CreateOrg = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="w-full max-w-lg mx-auto">
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-slate-900">{t.title}</h2>
-        <p className="mt-2 text-center text-sm text-slate-600">
-          {t.subtitle}
-        </p>
-      </div>
-
-      <div className="mt-8 w-full max-w-lg mx-auto">
-        {pendingInvites.length > 0 && (
-          <div className="bg-white py-6 px-4 shadow sm:rounded-lg sm:px-10 mb-6 border-2 border-blue-500">
-            <h3 className="text-lg font-medium text-slate-900 mb-4">You have pending invitations</h3>
-            <div className="space-y-4">
-              {pendingInvites.map(invite => (
-                <div key={invite.organization_id} className="flex items-center justify-between p-4 bg-slate-50 rounded border">
-                  <div>
-                    <p className="font-semibold text-slate-900">{invite.organizations?.name}</p>
-                    <p className="text-sm text-slate-500 capitalize">Role: {invite.role.replace('_', ' ')}</p>
-                  </div>
-                  <Button onClick={() => handleAcceptInvite(invite.organization_id)} disabled={loading}>
-                    Join
-                  </Button>
+    <AuthLayout title={t.title} subtitle={t.subtitle} step={3}>
+      
+      {pendingInvites.length > 0 && (
+        <div className="mb-8 border border-[#2F9E8F] bg-[#2F9E8F]/10 rounded-md p-6">
+          <h3 className="font-headline-md text-white mb-4">Pending Invitations</h3>
+          <div className="space-y-4 mb-6">
+            {pendingInvites.map(invite => (
+              <div key={invite.organization_id} className="flex items-center justify-between p-4 bg-surface-container border border-outline-variant rounded-sm">
+                <div>
+                  <p className="font-label-md uppercase tracking-widest text-white">{invite.organizations?.name}</p>
+                  <p className="text-xs text-[#2F9E8F] uppercase mt-1">Role: {invite.role.replace('_', ' ')}</p>
                 </div>
-              ))}
-            </div>
-            <div className="relative mt-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-slate-300" />
+                <button 
+                  onClick={() => handleAcceptInvite(invite.organization_id)} 
+                  disabled={loading}
+                  className="bg-transparent border border-outline-variant hover:bg-surface text-white px-4 py-2 text-xs font-label-md uppercase tracking-widest rounded-sm transition-colors"
+                >
+                  Accept
+                </button>
               </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-slate-500">Or create your own</span>
-              </div>
+            ))}
+          </div>
+          
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-outline-variant" />
             </div>
+            <div className="relative flex justify-center">
+              <span className="px-4 bg-surface text-xs font-label-md uppercase tracking-widest text-on-surface-variant">Or initialize your own</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <form className="space-y-8" onSubmit={handleSubmit(onSubmit)}>
+        {error && (
+          <div className="p-3 text-sm text-[#C4453A] bg-[#C4453A]/10 border border-[#C4453A]/20 rounded-sm">
+            {error}
           </div>
         )}
 
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
-            {error && (
-              <div className="p-3 text-sm text-red-700 bg-red-100 rounded-md">
-                {error}
-              </div>
-            )}
+        <Input
+          label={t.nameLabel}
+          type="text"
+          autoComplete="organization"
+          placeholder="e.g. Acme Corp"
+          error={errors.name?.message}
+          {...register('name')}
+        />
 
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-slate-700">
-                {t.nameLabel}
-              </label>
-              <div className="mt-1">
-                <input
-                  id="name"
-                  type="text"
-                  {...register('name')}
-                  className="appearance-none block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
-                />
-                {errors.name && <p className="mt-2 text-sm text-red-600">{errors.name.message}</p>}
-              </div>
-            </div>
-
-            <div>
-              <label htmlFor="slug" className="block text-sm font-medium text-slate-700">
-                Workspace URL
-              </label>
-              <div className="mt-1 flex rounded-md shadow-sm">
-                <input
-                  id="slug"
-                  type="text"
-                  {...register('slug')}
-                  className="flex-1 min-w-0 block w-full px-3 py-2 rounded-none rounded-l-md border border-slate-300 focus:ring-primary focus:border-primary sm:text-sm"
-                />
-                <span className="inline-flex items-center px-3 rounded-r-md border border-l-0 border-slate-300 bg-slate-50 text-slate-500 sm:text-sm">
-                  .crewly.com
-                </span>
-              </div>
-              {slugValue && (
-                <p className="mt-2 text-xs text-indigo-600 font-medium">
-                  Your workspace will be at <strong>{slugValue}.crewly.com</strong>
-                </p>
-              )}
-              {errors.slug && <p className="mt-2 text-sm text-red-600">{errors.slug.message}</p>}
-            </div>
-
-            <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-2">
-              <div>
-                <label className="block text-sm font-medium text-slate-700">Industry</label>
-                <select {...register('industry')} className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-slate-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md bg-white">
-                  <option value="">Select Industry</option>
-                  <option value="Technology">Technology</option>
-                  <option value="Retail">Retail</option>
-                  <option value="Healthcare">Healthcare</option>
-                  <option value="Manufacturing">Manufacturing</option>
-                  <option value="Finance">Finance</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700">Company Size</label>
-                <select {...register('size')} className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-slate-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md bg-white">
-                  <option value="">Select Size</option>
-                  <option value="1-10">1-10 employees</option>
-                  <option value="11-50">11-50 employees</option>
-                  <option value="51-200">51-200 employees</option>
-                  <option value="201-500">201-500 employees</option>
-                  <option value="500+">500+ employees</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700">Locale</label>
-                <select {...register('locale')} className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-slate-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md bg-white">
-                  <option value="">Select Locale</option>
-                  <option value="en-US">English (US)</option>
-                  <option value="en-GB">English (UK)</option>
-                  <option value="en-IN">English (India)</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700">Default Currency</label>
-                <select {...register('currency')} className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-slate-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md bg-white">
-                  <option value="">Select Currency</option>
-                  <option value="USD">USD ($)</option>
-                  <option value="EUR">EUR (€)</option>
-                  <option value="GBP">GBP (£)</option>
-                  <option value="INR">INR (₹)</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="pt-2">
-              <Button type="submit" className="w-full flex justify-center py-2 px-4" disabled={loading}>
-                {loading ? 'Creating workspace...' : 'Create workspace'}
-              </Button>
-            </div>
-          </form>
+        {/* Live slug preview - The one creative moment */}
+        <div className="mt-8 bg-surface-container border border-outline-variant rounded-sm p-4 relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#2F9E8F]/30 to-transparent"></div>
+          <p className="text-[10px] font-label-md uppercase tracking-widest text-on-surface-variant mb-2">Workspace allocation</p>
+          <div className="flex items-center text-sm sm:text-base md:text-lg">
+            <span className="font-mono text-[#2F9E8F] break-all">{generatedSlug || 'your-org-name'}</span>
+            <span className="font-mono text-on-surface-variant/50">.crewly.com</span>
+            <span className="ml-1 w-2 h-4 bg-[#2F9E8F] animate-pulse"></span>
+          </div>
         </div>
-      </div>
-    </div>
+
+        <button 
+          type="submit" 
+          disabled={loading || !generatedSlug}
+          className="w-full mt-8 bg-[#E8A23C] hover:bg-[#d69536] text-primary-container font-label-md uppercase tracking-widest py-3 transition-colors rounded-sm disabled:opacity-50"
+        >
+          {loading ? 'Initializing...' : 'Create workspace'}
+        </button>
+      </form>
+    </AuthLayout>
   );
 };

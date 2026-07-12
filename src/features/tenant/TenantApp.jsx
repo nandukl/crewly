@@ -52,20 +52,30 @@ export const TenantApp = ({ slug }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-surface flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-[#14161A] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#E8A23C] border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
 
   if (error || !org) {
+    const crewlyUrl = window.location.hostname.endsWith('localhost') ? 'http://localhost:5173' : 'https://crewly.com';
     return (
-      <div className="min-h-screen bg-surface flex items-center justify-center font-body-md">
-        <div className="text-center p-xl bg-surface-container-low rounded-2xl shadow-sm border border-outline-variant max-w-md">
-          <span className="material-symbols-outlined text-[64px] text-error mb-4">domain_disabled</span>
-          <h1 className="font-headline-sm text-on-surface">Workspace Not Found</h1>
-          <p className="text-on-surface-variant mt-2">The workspace <strong>'{slug}'</strong> does not exist or has been disabled.</p>
-          <a href="/" className="inline-block mt-8 text-primary font-bold hover:underline">Return to Crewly</a>
+      <div className="min-h-screen bg-[#14161A] flex flex-col items-center justify-center font-body-md p-6">
+        <div className="w-full max-w-[420px] bg-[#FFFFFF] border border-[#D8DAD5] rounded-sm p-8 text-center shadow-2xl text-[#1C2024]">
+          <div className="flex justify-center mb-6">
+            <span className="material-symbols-outlined text-[32px] text-[#C4453A]">domain_disabled</span>
+          </div>
+          <h1 className="font-display-md text-2xl text-[#1C2024] mb-3 font-bold">We couldn't find this workspace</h1>
+          <p className="text-[#5B5F63] font-body-md text-sm mb-8 leading-relaxed">
+            The workspace <span className="font-mono text-[#1C2024] bg-[#F7F7F4] px-1 py-0.5 rounded-sm">'{slug}'</span> does not exist or is inactive.
+          </p>
+          <a 
+            href={crewlyUrl}
+            className="inline-flex justify-center w-full py-3.5 bg-[#F7F7F4] border border-[#D8DAD5] hover:bg-white text-[#1C2024] font-medium rounded-sm transition-colors text-base"
+          >
+            Return to Crewly
+          </a>
         </div>
       </div>
     );

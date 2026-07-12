@@ -3,14 +3,14 @@ import React from 'react';
 import { WriteGate } from './WriteGate';
 
 export const Button = React.forwardRef(({ children, variant = 'primary', className = '', isLoading, actionType, ...props }, ref) => {
-  const baseStyles = "inline-flex items-center justify-center py-md px-lg font-title-lg text-title-lg rounded-lg transition-all focus:outline-none focus-ring disabled:opacity-50 disabled:cursor-not-allowed";
+  const baseStyles = "inline-flex items-center justify-center py-2 px-6 font-medium rounded-sm transition-all focus:outline-none focus-ring disabled:opacity-50 disabled:cursor-not-allowed border";
   
   const variants = {
-    primary: "bg-secondary text-white hover:bg-blue-600",
-    secondary: "bg-surface-container-lowest border border-outline-variant text-on-surface hover:bg-surface-container-low font-label-md text-label-md",
-    danger: "bg-error text-white hover:bg-red-700",
-    outline: "border border-outline-variant text-on-surface hover:bg-surface-container-low font-label-md text-label-md",
-    ghost: "text-on-surface-variant hover:bg-surface-container-low font-label-md text-label-md"
+    primary: "bg-[#E8A23C] border-[#E8A23C] text-primary-container hover:bg-[#d69536]",
+    secondary: "bg-surface-container-lowest border-outline-variant text-on-surface hover:bg-surface-container",
+    danger: "bg-[#C4453A] border-[#C4453A] text-white hover:bg-[#a3372c]",
+    outline: "border-outline-variant text-on-surface hover:bg-surface-container-lowest",
+    ghost: "border-transparent text-on-surface-variant hover:bg-surface-container hover:border-outline-variant"
   };
 
   const buttonElement = (

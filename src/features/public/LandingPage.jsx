@@ -1,64 +1,62 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ModulePanel } from '../../components/ui/ModulePanel';
 
 const modules = [
-  { icon: 'groups', title: 'HR & Directory', desc: 'Centralized employee directory, org charts, and core records.' },
-  { icon: 'schedule', title: 'Attendance', desc: 'Clock in/out tracking, timesheets, and correction workflows.' },
-  { icon: 'event_available', title: 'Leave Management', desc: 'Custom policies, balance tracking, and approval chains.' },
-  { icon: 'payments', title: 'Global Payroll', desc: 'Automated salary structures, deductions, and secure payslips.' },
-  { icon: 'handshake', title: 'Sales CRM', desc: 'Track leads, manage accounts, and monitor your deal pipeline.' },
-  { icon: 'account_tree', title: 'Projects', desc: 'Break down complex initiatives into tasks and track time.' },
-  { icon: 'support_agent', title: 'Help Desk', desc: 'Internal IT/HR support ticketing or customer-facing queues.' },
-  { icon: 'inventory_2', title: 'Inventory', desc: 'Stock movement ledgers and multi-warehouse support.' },
-  { icon: 'account_balance', title: 'Finance', desc: 'Track Accounts Receivable, Payable, and cash flow.' }
+  { id: 'hr', icon: 'groups', title: 'HR & Directory', desc: 'Centralized employee directory, org charts, and core records.' },
+  { id: 'attendance', icon: 'schedule', title: 'Attendance', desc: 'Clock in/out tracking, timesheets, and correction workflows.' },
+  { id: 'leave', icon: 'event_available', title: 'Leave Management', desc: 'Custom policies, balance tracking, and approval chains.' },
+  { id: 'payroll', icon: 'payments', title: 'Global Payroll', desc: 'Automated salary structures, deductions, and secure payslips.' },
+  { id: 'crm', icon: 'handshake', title: 'Sales CRM', desc: 'Track leads, manage accounts, and monitor your deal pipeline.' },
+  { id: 'projects', icon: 'account_tree', title: 'Projects', desc: 'Break down complex initiatives into tasks and track time.' },
+  { id: 'helpdesk', icon: 'support_agent', title: 'Help Desk', desc: 'Internal IT/HR support ticketing or customer-facing queues.' },
+  { id: 'inventory', icon: 'inventory_2', title: 'Inventory', desc: 'Stock movement ledgers and multi-warehouse support.' },
+  { id: 'finance', icon: 'account_balance', title: 'Finance', desc: 'Track Accounts Receivable, Payable, and cash flow.' },
+  { id: 'analytics', icon: 'bar_chart', title: 'Analytics', desc: 'Cross-module reporting and actionable business insights.' }
 ];
 
 const steps = [
-  { step: '01', title: 'Sign up', desc: 'Create your account in seconds. No credit card required.' },
-  { step: '02', title: 'Set up your org', desc: 'Claim your secure subdomain and define your basic structure.' },
-  { step: '03', title: 'Invite your team', desc: 'Assign roles and let your employees log into their new home.' },
-  { step: '04', title: 'Start working', desc: 'Rent the modules you need, when you need them, and scale up.' }
+  { step: '1', title: 'Sign up', desc: 'Create your account in seconds. No credit card required.' },
+  { step: '2', title: 'Set up your org', desc: 'Claim your secure subdomain and define your basic structure.' },
+  { step: '3', title: 'Invite your team', desc: 'Assign roles and let your employees log into their new home.' },
+  { step: '4', title: 'Start working', desc: 'Rent the modules you need, when you need them, and scale up.' }
 ];
 
 export const LandingPage = () => {
   const navigate = useNavigate();
+  const [activeModules, setActiveModules] = useState({});
 
-  const handleNav = (id) => {
-    const el = document.getElementById(id);
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
+  useEffect(() => {
+    let timeouts = [];
+    modules.forEach((mod, idx) => {
+      const timeout = setTimeout(() => {
+        setActiveModules(prev => ({ ...prev, [mod.id]: true }));
+      }, 500 + (idx * 60));
+      timeouts.push(timeout);
+    });
+
+    return () => timeouts.forEach(clearTimeout);
+  }, []);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-50 font-body-md overflow-x-hidden selection:bg-indigo-500/30">
+    <div className="min-h-screen bg-[#F7F7F4] text-[#1C2024] font-body-md selection:bg-[#E8A23C]/30">
       
-      {/* Navigation Bar */}
-      <nav className="fixed top-0 w-full z-50 bg-slate-950/80 backdrop-blur-md border-b border-slate-800">
-        <div className="max-w-[1280px] mx-auto px-6 h-16 flex items-center justify-between">
+      <nav className="fixed top-0 w-full z-50 bg-[#F7F7F4]/90 backdrop-blur-sm border-b border-[#D8DAD5]">
+        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => window.scrollTo(0,0)}>
-            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
-              <span className="material-symbols-outlined text-white text-xl">rocket_launch</span>
-            </div>
-            <span className="font-headline-md font-bold text-xl tracking-tight text-white">Crewly</span>
+            <span className="font-display-md text-xl tracking-tight font-bold text-[#1C2024]">Crewly</span>
           </div>
           
-          <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-300">
-            <button onClick={() => handleNav('modules')} className="hover:text-white transition-colors">Modules</button>
-            <button onClick={() => handleNav('how-it-works')} className="hover:text-white transition-colors">How it Works</button>
-            <button onClick={() => handleNav('pricing')} className="hover:text-white transition-colors">Pricing</button>
-          </div>
-
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-6">
             <button 
               onClick={() => navigate('/login')}
-              className="text-sm font-medium text-slate-300 hover:text-white transition-colors"
+              className="text-sm font-medium text-[#5B5F63] hover:text-[#1C2024] transition-colors"
             >
               Sign in
             </button>
             <button 
               onClick={() => navigate('/signup')}
-              className="text-sm font-bold bg-white text-slate-950 px-5 py-2 rounded-full hover:bg-slate-200 transition-all shadow-[0_0_15px_rgba(255,255,255,0.1)]"
+              className="text-sm font-medium bg-[#E8A23C] text-[#7A4F14] px-5 py-2 hover:bg-[#d69536] transition-colors rounded-sm"
             >
               Start free trial
             </button>
@@ -66,194 +64,157 @@ export const LandingPage = () => {
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <main className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 px-6">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-indigo-600/20 blur-[120px] rounded-full pointer-events-none"></div>
-        <div className="absolute top-40 left-1/4 w-[400px] h-[400px] bg-purple-600/20 blur-[120px] rounded-full pointer-events-none"></div>
-        
-        <div className="max-w-[896px] mx-auto text-center relative z-10">
-          <h1 className="text-5xl lg:text-7xl font-bold tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-white via-white to-slate-400 mb-6 leading-[1.1]">
-            Run your business, module by module.
-          </h1>
+      <main className="pt-32 pb-20 px-6">
+        <div className="max-w-6xl mx-auto text-center">
           
-          <p className="text-lg lg:text-xl text-slate-400 mb-10 max-w-[672px] mx-auto leading-relaxed">
-            Replace your disjointed stack of HR, CRM, Finance, and Project tools with a single, beautifully engineered platform. Only activate what you need.
-          </p>
-          
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <button 
-              onClick={() => navigate('/signup')}
-              className="w-full sm:w-auto px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-full transition-all shadow-[0_0_20px_rgba(79,70,229,0.3)] flex items-center justify-center gap-2 text-lg"
-            >
-              Start free trial
-              <span className="material-symbols-outlined text-sm">arrow_forward</span>
-            </button>
+          <div className="flex justify-center gap-3 mb-16 flex-wrap">
+            {modules.map((mod, idx) => (
+              <div key={mod.id} className="w-32 h-32 flex-shrink-0">
+                <ModulePanel
+                  title={mod.title}
+                  description={""}
+                  icon={mod.icon}
+                  status={activeModules[mod.id] && idx < 4 ? 'active' : 'inactive'}
+                  interactive={false}
+                  delayIndex={idx}
+                  size="small"
+                />
+              </div>
+            ))}
           </div>
-        </div>
 
-        {/* Abstract Dashboard Preview UI */}
-        <div className="max-w-[1152px] mx-auto mt-20 relative z-10 perspective-[2000px]">
-          <div className="w-full aspect-[16/9] rounded-2xl bg-slate-900/80 border border-slate-800 shadow-2xl backdrop-blur-sm overflow-hidden flex flex-col relative transform rotateX-[10deg] scale-95 origin-bottom transition-transform duration-700 hover:rotateX-0 hover:scale-100">
-            <div className="h-12 border-b border-slate-800 flex items-center px-4 gap-4 bg-slate-900/50">
-              <div className="flex gap-1.5">
-                <div className="w-3 h-3 rounded-full bg-slate-700"></div>
-                <div className="w-3 h-3 rounded-full bg-slate-700"></div>
-                <div className="w-3 h-3 rounded-full bg-slate-700"></div>
-              </div>
-              <div className="h-5 w-48 bg-slate-800 rounded mx-auto"></div>
+          <div className="max-w-3xl mx-auto">
+            <h1 className="font-display-lg text-5xl lg:text-7xl text-[#1C2024] mb-6 leading-tight font-bold">
+              Turn on only what your team needs.
+            </h1>
+            
+            <p className="font-body-lg text-[#5B5F63] mb-10 max-w-2xl mx-auto leading-relaxed text-lg">
+              Crewly is a modular business operating system. Build your precise stack by renting only the modules your organization requires right now. Turn off what you don't.
+            </p>
+            
+            <div className="flex justify-center items-center gap-4">
+              <button 
+                onClick={() => navigate('/signup')}
+                className="px-8 py-4 bg-[#E8A23C] hover:bg-[#d69536] text-[#7A4F14] font-medium transition-colors rounded-sm text-base shadow-sm"
+              >
+                Start free trial
+              </button>
+              <button 
+                onClick={() => navigate('/login')}
+                className="px-8 py-4 bg-transparent border border-[#D8DAD5] hover:bg-[#FFFFFF] text-[#1C2024] font-medium transition-colors rounded-sm text-base"
+              >
+                Sign in
+              </button>
             </div>
-            <div className="flex flex-1">
-              <div className="w-48 border-r border-slate-800 p-4 space-y-3 hidden sm:block">
-                {[1,2,3,4,5,6].map(i => <div key={i} className={`h-6 rounded ${i === 1 ? 'bg-indigo-600/20 border border-indigo-500/30' : 'bg-slate-800/50'}`}></div>)}
-              </div>
-              <div className="flex-1 p-6 space-y-6">
-                <div className="flex gap-4">
-                  {[1,2,3].map(i => (
-                    <div key={i} className="flex-1 h-24 bg-slate-800/30 border border-slate-800 rounded-xl p-4 flex flex-col justify-between">
-                      <div className="h-3 w-16 bg-slate-700 rounded"></div>
-                      <div className="h-6 w-24 bg-slate-600 rounded"></div>
-                    </div>
-                  ))}
-                </div>
-                <div className="h-48 bg-slate-800/30 border border-slate-800 rounded-xl"></div>
-              </div>
-            </div>
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent pointer-events-none"></div>
           </div>
         </div>
       </main>
 
-      {/* Trust Signals */}
-      <div className="border-y border-slate-800 bg-slate-900/30 py-8 relative z-10">
-        <div className="max-w-[1280px] mx-auto px-6 flex flex-wrap justify-center gap-8 md:gap-16 items-center text-slate-500 text-sm font-medium">
-          <div className="flex items-center gap-2"><span className="material-symbols-outlined">security</span> Multi-tenant Isolation</div>
-          <div className="flex items-center gap-2"><span className="material-symbols-outlined">public</span> Global Data Residency</div>
-          <div className="flex items-center gap-2"><span className="material-symbols-outlined">verified_user</span> Enterprise-grade Security</div>
-          <div className="flex items-center gap-2"><span className="material-symbols-outlined">rocket_launch</span> Built for Growing Teams</div>
-        </div>
-      </div>
-
-      {/* Feature Marketplace Section */}
-      <section id="modules" className="py-24 bg-slate-900/50 border-b border-slate-800 relative z-10">
-        <div className="max-w-[1280px] mx-auto px-6">
-          <div className="text-center max-w-[768px] mx-auto mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4">Rent only what you need.</h2>
-            <p className="text-slate-400 text-lg">
-              Crewly features an internal App Marketplace. Don't need Inventory Management? Turn it off. Want to add CRM later? One click install. You only pay for active modules.
+      <section className="py-24 border-t border-[#D8DAD5] bg-[#FFFFFF]">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="mb-16 max-w-3xl">
+            <h2 className="font-display-lg text-4xl text-[#1C2024] mb-4 font-bold">The Platform Modules</h2>
+            <p className="font-body-lg text-[#5B5F63] leading-relaxed text-lg">
+              Explore the available physical interfaces. Every module integrates seamlessly into your unified organization database. No disjointed SaaS silos.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {modules.map((mod, idx) => (
-              <div key={idx} className="bg-slate-950 border border-slate-800 p-8 rounded-2xl hover:bg-slate-900 transition-colors group relative overflow-hidden">
-                <div className="w-12 h-12 bg-slate-800 rounded-xl flex items-center justify-center mb-6 group-hover:bg-indigo-600/20 group-hover:text-indigo-400 transition-colors text-slate-400 relative z-10">
-                  <span className="material-symbols-outlined text-[28px]">{mod.icon}</span>
-                </div>
-                <h3 className="text-xl font-bold text-white mb-3 relative z-10">{mod.title}</h3>
-                <p className="text-slate-400 leading-relaxed relative z-10">{mod.desc}</p>
-                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-600/5 rounded-bl-full -mr-16 -mt-16 transition-transform group-hover:scale-150"></div>
+              <div key={idx} className="group relative">
+                <ModulePanel
+                  title={mod.title}
+                  description={mod.desc}
+                  icon={mod.icon}
+                  status="inactive"
+                  interactive={true}
+                />
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* How it Works */}
-      <section id="how-it-works" className="py-24 relative z-10">
-        <div className="max-w-[1280px] mx-auto px-6">
-          <div className="mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4">How it works</h2>
-            <p className="text-slate-400 text-lg">From empty workspace to fully operational in minutes.</p>
+      <section className="py-24 border-t border-[#D8DAD5] bg-[#F7F7F4]">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="mb-16 text-center">
+            <h2 className="font-display-lg text-4xl text-[#1C2024] mb-4 font-bold">How it works</h2>
+            <p className="font-body-lg text-[#5B5F63] max-w-2xl mx-auto text-lg">
+              From an empty workspace to a fully operational business operating system in minutes.
+            </p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {steps.map((step, idx) => (
-              <div key={idx} className="relative">
-                <div className="text-5xl font-black text-slate-800 mb-6">{step.step}</div>
-                <h3 className="text-xl font-bold text-white mb-3">{step.title}</h3>
-                <p className="text-slate-400">{step.desc}</p>
-                {idx < steps.length - 1 && (
-                  <div className="hidden md:block absolute top-6 left-24 right-0 h-px bg-slate-800"></div>
-                )}
+              <div key={idx} className="relative bg-[#FFFFFF] border border-[#D8DAD5] p-8 rounded-sm shadow-sm">
+                <div className="font-medium text-[#2F9E8F] mb-4 flex items-center gap-3">
+                  <span className="w-8 h-8 flex items-center justify-center bg-[#F7F7F4] border border-[#D8DAD5] rounded-sm text-sm font-mono text-[#0F4A42]">
+                    {step.step}
+                  </span>
+                  <span className="text-base text-[#1C2024] font-bold">{step.title}</span>
+                </div>
+                <p className="text-[#5B5F63] font-body-md leading-relaxed">{step.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Pricing */}
-      <section id="pricing" className="py-24 bg-slate-900/50 border-t border-slate-800 relative z-10">
-        <div className="max-w-[1280px] mx-auto px-6 text-center">
-          <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4">Simple, transparent pricing.</h2>
-          <p className="text-slate-400 text-lg max-w-[600px] mx-auto mb-16">
-            Pay a flat platform fee, plus a small per-user cost for only the modules you actually turn on.
-          </p>
-          
-          <div className="flex flex-col md:flex-row justify-center items-center gap-8 max-w-[800px] mx-auto">
-            <div className="flex-1 bg-slate-950 border border-slate-800 p-10 rounded-3xl w-full">
-              <h3 className="text-2xl font-bold text-white mb-2">Platform Subscription</h3>
-              <div className="text-slate-400 mb-6">Your organization's base</div>
-              <div className="text-5xl font-black text-white mb-6">Talk to us</div>
-              <ul className="text-left space-y-4 text-slate-300 mb-8">
-                <li className="flex items-center gap-3"><span className="material-symbols-outlined text-indigo-400 text-xl">check_circle</span> Custom Subdomain</li>
-                <li className="flex items-center gap-3"><span className="material-symbols-outlined text-indigo-400 text-xl">check_circle</span> Unlimited Core Users</li>
-                <li className="flex items-center gap-3"><span className="material-symbols-outlined text-indigo-400 text-xl">check_circle</span> Roles & Permissions</li>
+      <section className="py-24 border-t border-[#D8DAD5] bg-[#FFFFFF]">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="mb-16 text-center max-w-3xl mx-auto">
+            <h2 className="font-display-lg text-4xl text-[#1C2024] mb-4 font-bold">Pricing structure</h2>
+            <p className="font-body-lg text-[#5B5F63] text-lg">
+              Organization base infrastructure is billed separately from module usage. The separation is the pitch.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            
+            <div className="border border-[#D8DAD5] p-8 rounded-sm bg-[#F7F7F4] text-[#1C2024]">
+              <h3 className="font-display-lg text-2xl mb-2 font-bold">Organization Subscription</h3>
+              <p className="font-body-md text-[#5B5F63] mb-8">Secure infrastructure and core directory.</p>
+              <div className="font-display-lg text-4xl mb-8 border-b border-[#D8DAD5] pb-4">Flat Fee</div>
+              <ul className="space-y-4 font-body-md text-[#1C2024]">
+                <li className="flex items-center gap-3"><span className="material-symbols-outlined text-[#5B5F63] text-[20px]">check</span> Custom Subdomain</li>
+                <li className="flex items-center gap-3"><span className="material-symbols-outlined text-[#5B5F63] text-[20px]">check</span> Unlimited Core Users</li>
+                <li className="flex items-center gap-3"><span className="material-symbols-outlined text-[#5B5F63] text-[20px]">check</span> Roles & Permissions</li>
               </ul>
             </div>
             
-            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-slate-800 text-slate-400 flex-shrink-0">
-              <span className="material-symbols-outlined">add</span>
-            </div>
-            
-            <div className="flex-1 bg-gradient-to-b from-indigo-900/40 to-slate-950 border border-indigo-500/30 p-10 rounded-3xl w-full relative overflow-hidden">
-              <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-indigo-500 to-purple-500"></div>
-              <h3 className="text-2xl font-bold text-white mb-2">Per Module Cost</h3>
-              <div className="text-slate-400 mb-6">Pay for what you use</div>
-              <div className="text-5xl font-black text-white mb-6">Modular</div>
-              <ul className="text-left space-y-4 text-slate-300 mb-8">
-                <li className="flex items-center gap-3"><span className="material-symbols-outlined text-indigo-400 text-xl">check_circle</span> Activate anytime</li>
-                <li className="flex items-center gap-3"><span className="material-symbols-outlined text-indigo-400 text-xl">check_circle</span> Pro-rated billing</li>
-                <li className="flex items-center gap-3"><span className="material-symbols-outlined text-indigo-400 text-xl">check_circle</span> 14-day free trial on all</li>
+            <div className="border border-[#D8DAD5] p-8 rounded-sm bg-[#FFFFFF] text-[#1C2024] relative shadow-sm">
+              <div className="absolute top-0 right-0 w-16 h-16 bg-[#E8A23C]/10 border-b border-l border-[#D8DAD5] rounded-bl-sm flex items-center justify-center">
+                <div className="w-2 h-2 rounded-full bg-[#E8A23C] animate-pulse-amber"></div>
+              </div>
+              <h3 className="font-display-lg text-2xl mb-2 font-bold">Per-Module Pricing</h3>
+              <p className="font-body-md text-[#5B5F63] mb-8">Pay strictly for active components.</p>
+              <div className="font-display-lg text-4xl mb-8 border-b border-[#D8DAD5] pb-4">Per User</div>
+              <ul className="space-y-4 font-body-md text-[#1C2024]">
+                <li className="flex items-center gap-3"><span className="material-symbols-outlined text-[#2F9E8F] text-[20px]">check</span> Activate anytime</li>
+                <li className="flex items-center gap-3"><span className="material-symbols-outlined text-[#2F9E8F] text-[20px]">check</span> Pro-rated billing</li>
+                <li className="flex items-center gap-3"><span className="material-symbols-outlined text-[#2F9E8F] text-[20px]">check</span> 14-day free trial on all</li>
               </ul>
             </div>
+            
           </div>
         </div>
       </section>
 
-      {/* Footer CTA */}
-      <section className="py-32 relative z-10 overflow-hidden bg-slate-950">
-        <div className="absolute inset-0 bg-indigo-600/10 blur-[100px] rounded-full pointer-events-none transform translate-y-1/2"></div>
-        <div className="max-w-[896px] mx-auto text-center px-6">
-          <h2 className="text-4xl lg:text-5xl font-bold text-white mb-6 tracking-tight">Ready to streamline your business?</h2>
-          <p className="text-xl text-slate-400 mb-10">Start your 14-day free trial. Setup takes less than 5 minutes.</p>
-          <button 
-            onClick={() => navigate('/signup')}
-            className="px-8 py-4 bg-white text-slate-950 font-bold rounded-full transition-all hover:scale-105 shadow-[0_0_20px_rgba(255,255,255,0.2)] text-lg"
-          >
-            Start free trial
-          </button>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="border-t border-slate-800 bg-slate-950 py-12 relative z-10">
-        <div className="max-w-[1280px] mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
+      <footer className="border-t border-[#D8DAD5] bg-[#F7F7F4] py-12">
+        <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-xl text-indigo-500">rocket_launch</span>
-            <span className="font-bold tracking-tight text-white">Crewly</span>
+            <span className="font-display-md tracking-tight font-bold text-[#1C2024]">Crewly</span>
           </div>
-          <div className="flex flex-col md:flex-row items-center gap-6 text-sm text-slate-400">
-            <button onClick={() => navigate('/login')} className="text-indigo-400 hover:text-indigo-300 font-medium">
-              Existing customer? Sign in to your workspace
-            </button>
-            <div className="hidden md:block w-px h-4 bg-slate-800"></div>
-            <a href="#" className="hover:text-white transition-colors">Privacy</a>
-            <a href="#" className="hover:text-white transition-colors">Terms</a>
-            <a href="#" className="hover:text-white transition-colors">Contact</a>
+          <div className="flex flex-col md:flex-row items-center gap-6 text-sm text-[#5B5F63] font-medium">
+            <a href="#" className="hover:text-[#1C2024] transition-colors">Privacy</a>
+            <a href="#" className="hover:text-[#1C2024] transition-colors">Terms</a>
+            <a href="#" className="hover:text-[#1C2024] transition-colors">Contact</a>
           </div>
         </div>
       </footer>
+
     </div>
   );
 };
+
 

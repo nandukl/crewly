@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../../lib/supabaseClient';
 import { authService } from '../../lib/authService';
-import { OrgLogo } from '../org/OrgLogo';
 
 export const TenantLogin = ({ organization }) => {
   const [email, setEmail] = useState('');
@@ -18,9 +16,6 @@ export const TenantLogin = ({ organization }) => {
 
     try {
       await authService.login(email, password);
-      
-      // The user is logged in. 
-      // The OrgContext (loaded in /dashboard) will enforce that they actually belong to this organization.
       navigate('/dashboard');
     } catch (err) {
       setError(err.message);
@@ -30,94 +25,81 @@ export const TenantLogin = ({ organization }) => {
   };
 
   return (
-    <div className="min-h-screen bg-surface grid grid-cols-1 lg:grid-cols-2 font-body-md">
-      {/* Left side: Branding */}
-      <div className="hidden lg:flex flex-col justify-center px-12 xl:px-24 bg-surface-container-lowest border-r border-outline-variant relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-primary/5 blur-[120px] rounded-full transform translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
+    <div className="min-h-screen bg-[#14161A] flex flex-col items-center justify-center font-body-md p-6 selection:bg-[#E8A23C]/30">
+      <div className="w-full max-w-[420px] flex flex-col items-center animate-in fade-in slide-in-from-bottom-2 duration-300">
         
-        <div className="w-full min-w-[400px] max-w-xl relative z-10">
-          <OrgLogo 
-            logoUrl={organization.logo_url} 
-            alt={organization.name} 
-            className="h-16 w-16 rounded-xl shadow-sm mb-6 bg-white object-cover" 
-          />
-          <h1 className="font-headline-lg text-4xl font-bold text-on-surface mb-4">
-            Welcome to {organization.name}
-          </h1>
-          <p className="text-on-surface-variant text-lg">
-            Sign in to access your employee workspace.
-          </p>
-        </div>
-      </div>
-
-      {/* Right side: Login Form */}
-      <div className="flex flex-col justify-center px-8 sm:px-12 lg:px-24 bg-surface relative">
-        <div className="w-full max-w-[400px] mx-auto">
-          {/* Mobile logo */}
-          <div className="lg:hidden flex items-center gap-3 mb-8">
-            <OrgLogo 
-              logoUrl={organization.logo_url} 
+        {/* Branding (Above Form, larger) */}
+        <div className="flex flex-col items-center mb-10 text-center">
+          {organization.logo_url ? (
+            <img 
+              src={organization.logo_url} 
               alt={organization.name} 
-              className="h-10 w-10 rounded-lg shadow-sm object-cover flex-shrink-0" 
+              className="h-20 w-20 rounded-sm mb-6 object-cover border border-[#2A2C30]" 
             />
-            <span className="font-headline-sm font-bold text-on-surface truncate">{organization.name}</span>
-          </div>
+          ) : (
+            <div className="h-20 w-20 rounded-sm mb-6 bg-white border border-[#D8DAD5] flex items-center justify-center text-3xl font-display-md text-[#1C2024]">
+              {organization.name.substring(0,2).toUpperCase()}
+            </div>
+          )}
+          <h1 className="font-display-lg text-4xl text-white tracking-tight">
+            {organization.name}
+          </h1>
+        </div>
 
-          <h2 className="font-headline-md text-2xl font-bold text-on-surface mb-2">Sign In</h2>
-          <p className="text-on-surface-variant mb-8">Enter your credentials to access your account.</p>
+        {/* Form Panel - Strictly White for Contrast */}
+        <div className="w-full bg-[#FFFFFF] border border-[#D8DAD5] rounded-sm p-8 shadow-2xl text-[#1C2024]">
+          <h2 className="font-display-md text-2xl text-[#1C2024] mb-8 text-center">Sign in to {organization.name}</h2>
 
           <form onSubmit={handleLogin} className="space-y-5">
             {error && (
-              <div className="bg-error-container text-on-error-container p-4 rounded-lg text-sm border border-error/20 flex items-start gap-3">
-                <span className="material-symbols-outlined text-[20px] shrink-0 mt-0.5">error</span>
+              <div className="bg-[#C4453A]/10 border border-[#C4453A]/30 text-[#C4453A] p-4 rounded-sm text-sm flex items-start gap-3">
+                <span className="material-symbols-outlined text-[18px] shrink-0">error</span>
                 <span>{error}</span>
               </div>
             )}
 
             <div>
-              <label className="block text-sm font-bold text-on-surface mb-2">Work Email</label>
+              <label className="block text-sm font-medium text-[#1C2024] mb-2">Work email</label>
               <input 
                 type="email"
                 required
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-4 py-3 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-shadow"
+                className="w-full bg-[#FFFFFF] border border-[#D8DAD5] rounded-sm px-4 py-3 text-[#1C2024] focus:border-[#E8A23C] focus:ring-1 focus:ring-[#E8A23C] outline-none transition-colors text-sm"
                 placeholder="name@company.com"
               />
             </div>
             
             <div>
-              <div className="flex justify-between items-center mb-2">
-                <label className="block text-sm font-bold text-on-surface">Password</label>
-                <a href="#" className="text-sm font-bold text-primary hover:underline">Forgot password?</a>
-              </div>
+              <label className="block text-sm font-medium text-[#1C2024] mb-2">Password</label>
               <input 
                 type="password"
                 required
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-4 py-3 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-shadow"
+                className="w-full bg-[#FFFFFF] border border-[#D8DAD5] rounded-sm px-4 py-3 text-[#1C2024] focus:border-[#E8A23C] focus:ring-1 focus:ring-[#E8A23C] outline-none transition-colors text-sm"
                 placeholder="••••••••"
               />
             </div>
 
-            <button 
-              type="submit"
-              disabled={loading}
-              className="w-full bg-primary hover:bg-primary/90 text-on-primary font-bold py-3 rounded-lg transition-colors flex justify-center items-center h-12 shadow-sm"
-            >
-              {loading ? <span className="w-5 h-5 border-2 border-on-primary border-t-transparent rounded-full animate-spin"></span> : 'Sign In'}
-            </button>
+            <div className="pt-4">
+              <button 
+                type="submit"
+                disabled={loading}
+                className="w-full bg-[#E8A23C] hover:bg-[#d69536] text-[#7A4F14] font-medium py-3.5 rounded-sm transition-colors flex justify-center items-center disabled:opacity-50 text-base shadow-sm"
+              >
+                {loading ? 'Authenticating...' : 'Sign in'}
+              </button>
+            </div>
           </form>
-          
-          <div className="mt-8 pt-6 border-t border-outline-variant flex justify-center items-center gap-2 text-sm text-on-surface-variant opacity-70">
-            <span>Powered by</span>
-            <span className="font-bold flex items-center gap-1">
-              <span className="material-symbols-outlined text-[16px]">rocket_launch</span>
-              Crewly
-            </span>
-          </div>
         </div>
+
+        {/* Powered by */}
+        <div className="mt-8 text-white/50 text-xs flex items-center gap-1.5 font-medium">
+          <span>Powered by</span>
+          <span className="text-white">Crewly</span>
+        </div>
+
       </div>
     </div>
   );

@@ -22,83 +22,85 @@ export const PlatformAdminDashboard = () => {
   ];
 
   return (
-    <div className="flex h-screen bg-surface-container overflow-hidden">
-      {/* Side Navigation */}
-      <aside className="w-[280px] bg-surface-container-lowest border-r border-outline-variant flex flex-col z-20 flex-shrink-0">
-        <div className="h-[64px] flex items-center px-lg border-b border-outline-variant">
-          <div className="flex items-center gap-sm text-primary">
-            <span className="material-symbols-outlined text-[28px]">admin_panel_settings</span>
-            <span className="font-title-lg font-bold tracking-tight">Crewly Admin</span>
+    <div className="flex h-screen bg-[#F8F9FA] text-[#14161A] font-body-md selection:bg-[#E8A23C]/30 overflow-hidden">
+      {/* Side Navigation - Distinct stark white/gray panel */}
+      <aside className="w-[240px] bg-white border-r border-[#E5E7EB] flex flex-col z-20 flex-shrink-0 shadow-sm">
+        <div className="h-[64px] flex items-center px-6 border-b border-[#E5E7EB]">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 bg-[#14161A] rounded-sm flex items-center justify-center">
+               <span className="material-symbols-outlined text-[16px] text-white">admin_panel_settings</span>
+            </div>
+            <span className="font-display-md text-sm font-bold tracking-tight text-[#14161A] mt-0.5">Platform Admin</span>
           </div>
         </div>
 
-        <div className="flex-1 py-md px-sm overflow-y-auto space-y-1">
-          <div className="px-md py-sm mb-xs">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/70">Platform Control</span>
+        <div className="flex-1 py-4 px-3 overflow-y-auto space-y-1">
+          <div className="px-3 py-2 mb-2 border-b border-[#E5E7EB]/50">
+            <span className="text-[10px] font-medium text-[#14161A]/50">Control surface</span>
           </div>
           {navItems.map((item) => (
             <button
               key={item.id}
               disabled={item.disabled}
               onClick={() => setActiveTab(item.id)}
-              className={`w-full flex items-center gap-md px-md py-2.5 rounded-lg text-sm font-medium transition-colors ${
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-sm text-sm font-medium transition-colors ${
                 activeTab === item.id
-                  ? 'bg-primary-container text-on-primary-container'
-                  : 'text-on-surface hover:bg-surface-container-highest'
+                  ? 'bg-[#14161A] text-white'
+                  : 'text-[#14161A]/70 hover:bg-[#F3F4F6] hover:text-[#14161A]'
               } ${item.disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              <span className={`material-symbols-outlined text-[20px] ${activeTab === item.id ? 'text-primary' : 'text-on-surface-variant'}`}>
+              <span className={`material-symbols-outlined text-[16px] ${activeTab === item.id ? 'text-white' : 'text-[#14161A]/50'}`}>
                 {item.icon}
               </span>
-              {item.label}
-              {item.disabled && <span className="ml-auto text-[10px] bg-surface-container px-2 py-0.5 rounded border border-outline-variant text-on-surface-variant">Soon</span>}
+              <span className="mt-0.5">{item.label}</span>
+              {item.disabled && <span className="ml-auto text-[9px] font-medium bg-[#E5E7EB] px-1.5 py-0.5 rounded-sm text-[#14161A]/60">SOON</span>}
             </button>
           ))}
         </div>
 
-        <div className="p-sm border-t border-outline-variant">
+        <div className="p-4 border-t border-[#E5E7EB] space-y-1">
           <button
             onClick={() => navigate('/dashboard')}
-            className="w-full flex items-center gap-md px-md py-2.5 rounded-lg text-sm font-medium text-on-surface hover:bg-surface-container-highest transition-colors mb-1"
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-sm text-sm font-medium text-[#14161A]/70 hover:bg-[#F3F4F6] transition-colors"
           >
-            <span className="material-symbols-outlined text-[20px] text-on-surface-variant">arrow_back</span>
-            Exit Admin
+            <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+            <span className="mt-0.5">Exit Admin</span>
           </button>
           <button
             onClick={handleSignOut}
-            className="w-full flex items-center gap-md px-md py-2.5 rounded-lg text-sm font-medium text-error hover:bg-error-container/50 transition-colors"
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-sm text-sm font-medium text-[#C4453A] hover:bg-[#C4453A]/10 transition-colors"
           >
-            <span className="material-symbols-outlined text-[20px]">logout</span>
-            Sign Out
+            <span className="material-symbols-outlined text-[16px]">logout</span>
+            <span className="mt-0.5">Sign Out</span>
           </button>
         </div>
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col relative overflow-hidden bg-surface-container">
+      <main className="flex-1 flex flex-col relative overflow-hidden bg-[#F8F9FA]">
         {/* Top Header */}
-        <header className="h-[64px] flex justify-between items-center px-xl bg-surface-container-lowest border-b border-outline-variant flex-shrink-0 z-10">
-          <div className="flex items-center gap-md">
-            <h2 className="font-title-lg text-title-lg text-on-surface">
+        <header className="h-[64px] flex justify-between items-center px-8 bg-white border-b border-[#E5E7EB] flex-shrink-0 z-10 shadow-sm">
+          <div className="flex items-center gap-3">
+            <h2 className="font-display-md text-xl font-bold text-[#14161A]">
               {navItems.find(n => n.id === activeTab)?.label}
             </h2>
           </div>
-          <div className="flex items-center gap-md">
-             <span className="inline-flex items-center gap-sm px-sm py-1 bg-error-container/30 border border-error/20 rounded-full">
-               <span className="w-2 h-2 rounded-full bg-error animate-pulse"></span>
-               <span className="text-xs font-bold text-error uppercase tracking-wider">Super Admin</span>
+          <div className="flex items-center gap-4">
+             <span className="inline-flex items-center gap-2 px-3 py-1 bg-[#14161A] rounded-sm">
+               <span className="w-1.5 h-1.5 rounded-full bg-[#E8A23C] animate-pulse-amber"></span>
+               <span className="text-xs font-medium text-white mt-0.5">Super Admin active</span>
              </span>
           </div>
         </header>
 
         {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto p-xl">
-          <div className="max-w-container-max mx-auto w-full">
+        <div className="flex-1 overflow-y-auto p-8">
+          <div className="max-w-6xl mx-auto w-full">
             {activeTab === 'organizations' && <OrganizationsTab />}
             {activeTab === 'users' && <SystemUsersTab />}
             {activeTab === 'settings' && <GlobalSettingsTab />}
             {activeTab === 'overview' && (
-              <div className="p-xl text-center text-on-surface-variant">Overview dashboard coming soon...</div>
+              <div className="p-8 text-center font-mono text-[#14161A]/50">Overview dashboard coming soon...</div>
             )}
           </div>
         </div>

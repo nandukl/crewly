@@ -25,17 +25,21 @@ export const OrgSwitcher = () => {
 
   return (
     <div className="relative inline-block text-left">
-      <select
-        value={activeOrganization?.id || ''}
-        onChange={handleSwitch}
-        className="block w-full pl-3 pr-8 py-1.5 text-sm font-medium bg-surface-container-low border border-outline-variant text-on-surface focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary rounded-md"
-      >
-        {organizations.map((org) => (
-          <option key={org.id} value={org.id}>
-            {org.name}
-          </option>
-        ))}
-      </select>
+      <div className="flex items-center gap-2 bg-surface-container border border-outline-variant px-3 py-1.5 rounded-sm">
+        <span className="material-symbols-outlined text-[14px] text-on-surface-variant">corporate_fare</span>
+        <select
+          value={activeOrganization?.id || ''}
+          onChange={handleSwitch}
+          className="bg-transparent border-none text-xs font-label-md uppercase tracking-widest text-on-surface focus:outline-none focus:ring-0 appearance-none cursor-pointer pr-4"
+        >
+          {organizations.map((org) => (
+            <option key={org.id} value={org.id} className="bg-surface-container text-on-surface">
+              {org.name}
+            </option>
+          ))}
+        </select>
+        <span className="material-symbols-outlined text-[14px] text-on-surface-variant pointer-events-none absolute right-3">expand_more</span>
+      </div>
     </div>
   );
 };

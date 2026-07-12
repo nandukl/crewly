@@ -1,59 +1,44 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary: #000000;
-  --color-on-background: #0b1c30;
-  --color-primary-fixed: #dae2fd;
-  --color-outline-variant: #c6c6cd;
-  --color-outline: #76777d;
-  --color-on-primary-container: #7c839b;
-  --color-background: #f8f9ff;
-  --color-tertiary: #000000;
-  --color-on-secondary-container: #fefcff;
-  --color-surface-container-high: #dce9ff;
-  --color-surface-variant: #d3e4fe;
-  --color-surface-tint: #565e74;
-  --color-on-surface-variant: #45464d;
-  --color-surface-container-highest: #d3e4fe;
-  --color-secondary: #0051d5;
-  --color-inverse-on-surface: #eaf1ff;
-  --color-on-tertiary-fixed: #23005c;
-  --color-surface-container-lowest: #ffffff;
-  --color-primary-fixed-dim: #bec6e0;
-  --color-on-tertiary: #ffffff;
-  --color-on-tertiary-container: #9466ff;
-  --color-on-secondary: #ffffff;
-  --color-tertiary-fixed-dim: #d0bcff;
-  --color-on-secondary-fixed: #00174b;
-  --color-on-tertiary-fixed-variant: #5516be;
-  --color-on-error-container: #93000a;
-  --color-error-container: #ffdad6;
-  --color-tertiary-fixed: #e9ddff;
-  --color-primary-container: #131b2e;
-  --color-on-surface: #0b1c30;
-  --color-tertiary-container: #23005c;
-  --color-surface: #f8f9ff;
-  --color-surface-dim: #cbdbf5;
-  --color-surface-bright: #f8f9ff;
-  --color-on-secondary-fixed-variant: #003ea8;
-  --color-inverse-surface: #213145;
-  --color-on-primary-fixed-variant: #3f465c;
-  --color-error: #ba1a1a;
-  --color-on-error: #ffffff;
-  --color-surface-container-low: #eff4ff;
-  --color-surface-container: #e5eeff;
-  --color-secondary-fixed: #dbe1ff;
-  --color-secondary-container: #316bf3;
-  --color-on-primary-fixed: #131b2e;
-  --color-on-primary: #ffffff;
-  --color-inverse-primary: #bec6e0;
-  --color-secondary-fixed-dim: #b4c5ff;
+  --color-graphite: #14161A;
+  --color-panel: #F3F3F0;
+  --color-ink: #22262B;
+  --color-circuit: #C9CCC7;
+  --color-signal-amber: #E8A23C;
+  --color-current-teal: #2F9E8F;
+  --color-alert-red: #C4453A;
 
-  --radius-sm: 0.125rem;
-  --radius-DEFAULT: 0.25rem;
-  --radius-md: 0.375rem;
-  --radius-lg: 0.5rem;
-  --radius-xl: 0.75rem;
+  /* Aliasing Tailwind's typical functional names to our strict tokens for compatibility where needed */
+  --color-background: var(--color-panel);
+  --color-surface: var(--color-panel);
+  --color-surface-container: #ebebe6;
+  --color-surface-container-lowest: #ffffff;
+  --color-on-background: var(--color-ink);
+  --color-on-surface: var(--color-ink);
+  --color-on-surface-variant: #5c626b;
+  
+  --color-primary: var(--color-ink);
+  --color-on-primary: var(--color-panel);
+  --color-primary-container: var(--color-graphite);
+  --color-on-primary-container: #ffffff;
+
+  --color-secondary: var(--color-graphite);
+  --color-on-secondary: #ffffff;
+
+  --color-error: var(--color-alert-red);
+  --color-error-container: #fceceb;
+  --color-on-error: #ffffff;
+  --color-on-error-container: #7a1f18;
+
+  --color-outline: var(--color-circuit);
+  --color-outline-variant: var(--color-circuit);
+
+  --radius-sm: 0px;
+  --radius-DEFAULT: 8px;
+  --radius-md: 8px;
+  --radius-lg: 8px;
+  --radius-xl: 8px;
   --radius-full: 9999px;
 
   --spacing-container-max: 1440px;
@@ -67,15 +52,15 @@
   --spacing-gutter: 24px;
   --spacing-sm: 8px;
 
-  --font-body-lg: Inter, sans-serif;
-  --font-label-md: Geist, sans-serif;
-  --font-headline-lg-mobile: Geist, sans-serif;
-  --font-headline-md: Geist, sans-serif;
-  --font-display-lg: Geist, sans-serif;
-  --font-body-md: Inter, sans-serif;
-  --font-code-sm: Geist, sans-serif;
-  --font-title-lg: Inter, sans-serif;
-  --font-headline-lg: Geist, sans-serif;
+  --font-body-lg: 'IBM Plex Sans', sans-serif;
+  --font-label-md: 'IBM Plex Mono', monospace;
+  --font-headline-lg-mobile: 'Space Grotesk', sans-serif;
+  --font-headline-md: 'Space Grotesk', sans-serif;
+  --font-display-lg: 'Space Grotesk', sans-serif;
+  --font-body-md: 'IBM Plex Sans', sans-serif;
+  --font-code-sm: 'IBM Plex Mono', monospace;
+  --font-title-lg: 'Space Grotesk', sans-serif;
+  --font-headline-lg: 'Space Grotesk', sans-serif;
 
   --text-body-lg: 16px;
   --text-body-lg--line-height: 24px;
@@ -83,7 +68,6 @@
 
   --text-label-md: 12px;
   --text-label-md--line-height: 16px;
-  --text-label-md--letter-spacing: 0.05em;
   --text-label-md--font-weight: 500;
 
   --text-headline-lg-mobile: 24px;
@@ -96,7 +80,6 @@
 
   --text-display-lg: 48px;
   --text-display-lg--line-height: 56px;
-  --text-display-lg--letter-spacing: -0.02em;
   --text-display-lg--font-weight: 700;
 
   --text-body-md: 14px;
@@ -113,7 +96,6 @@
 
   --text-headline-lg: 32px;
   --text-headline-lg--line-height: 40px;
-  --text-headline-lg--letter-spacing: -0.01em;
   --text-headline-lg--font-weight: 600;
 }
 
@@ -132,6 +114,26 @@
 body {
   background-color: var(--color-background);
   color: var(--color-on-background);
+}
+
+@keyframes pulse-amber {
+  0% { box-shadow: 0 0 0 0 rgba(232, 162, 60, 0.4); opacity: 0.8; }
+  50% { box-shadow: 0 0 8px 2px rgba(232, 162, 60, 0.1); opacity: 1; }
+  100% { box-shadow: 0 0 0 0 rgba(232, 162, 60, 0); opacity: 0.8; }
+}
+
+@keyframes pulse-teal {
+  0% { box-shadow: 0 0 0 0 rgba(47, 158, 143, 0.4); opacity: 0.8; }
+  50% { box-shadow: 0 0 8px 2px rgba(47, 158, 143, 0.1); opacity: 1; }
+  100% { box-shadow: 0 0 0 0 rgba(47, 158, 143, 0); opacity: 0.8; }
+}
+
+.animate-pulse-amber {
+  animation: pulse-amber 2.5s infinite ease-in-out;
+}
+
+.animate-pulse-teal {
+  animation: pulse-teal 2.5s infinite ease-in-out;
 }
 
 .material-symbols-outlined {

@@ -40,7 +40,7 @@ export const Login = () => {
   };
 
   return (
-    <AuthLayout title="Welcome Back">
+    <AuthLayout title="Welcome back">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-lg">
         {serverError && (
           <div className="p-3 text-sm text-error bg-error-container rounded-md">

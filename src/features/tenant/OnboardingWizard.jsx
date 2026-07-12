@@ -3,18 +3,19 @@ import { useNavigate } from 'react-router-dom';
 import { useOrg } from '../org/OrgContext';
 import { orgService } from '../../lib/orgService';
 import { supabase } from '../../lib/supabaseClient';
-import { Button } from '../../components/ui/Button';
+import { ModulePanel } from '../../components/ui/ModulePanel';
 
 const AVAILABLE_MODULES = [
-  { id: 'attendance', name: 'Attendance', icon: 'event_available', desc: 'Track clock-ins, timesheets, and presence.' },
-  { id: 'leave', name: 'Leave Management', icon: 'event_busy', desc: 'Manage time off requests, policies, and balances.' },
+  { id: 'hr', name: 'HR & directory', icon: 'groups', desc: 'Centralized employee directory, org charts, and core records.' },
+  { id: 'attendance', name: 'Attendance', icon: 'schedule', desc: 'Track clock-ins, timesheets, and presence.' },
+  { id: 'leave', name: 'Leave management', icon: 'event_available', desc: 'Manage time off requests, policies, and balances.' },
   { id: 'payroll', name: 'Payroll', icon: 'payments', desc: 'Run compensation cycles and generate payslips.' },
   { id: 'performance', name: 'Performance', icon: 'trending_up', desc: 'Manage goals, 1-on-1s, and review cycles.' },
   { id: 'crm', name: 'CRM', icon: 'handshake', desc: 'Track leads, accounts, contacts, and deal pipelines.' },
   { id: 'projects', name: 'Projects', icon: 'account_tree', desc: 'Manage tasks, milestones, and project delivery.' },
-  { id: 'helpdesk', name: 'Help Desk', icon: 'support_agent', desc: 'Internal or external support ticketing.' },
+  { id: 'helpdesk', name: 'Help desk', icon: 'support_agent', desc: 'Internal or external support ticketing.' },
   { id: 'inventory', name: 'Inventory', icon: 'inventory_2', desc: 'Track items, stock levels, and warehouse locations.' },
-  { id: 'finance', name: 'Finance & Expenses', icon: 'account_balance', desc: 'Manage AR, AP, and the General Ledger.' },
+  { id: 'finance', name: 'Finance & expenses', icon: 'account_balance', desc: 'Manage AR, AP, and the General Ledger.' }
 ];
 
 export const OnboardingWizard = () => {
@@ -23,15 +24,20 @@ export const OnboardingWizard = () => {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [selectedModules, setSelectedModules] = useState([]);
+  const [transitioningMod, setTransitioningMod] = useState(null);
   const [invites, setInvites] = useState([{ email: '', role: 'employee' }]);
+  const [departments, setDepartments] = useState(['Engineering', 'Sales', 'HR']);
 
   const handleNext = () => setStep(s => s + 1);
-  const handleBack = () => setStep(s => s - 1);
 
   const toggleModule = (id) => {
-    setSelectedModules(prev => 
-      prev.includes(id) ? prev.filter(m => m !== id) : [...prev, id]
-    );
+    setTransitioningMod(id);
+    setTimeout(() => {
+      setSelectedModules(prev => 
+        prev.includes(id) ? prev.filter(m => m !== id) : [...prev, id]
+      );
+      setTransitioningMod(null);
+    }, 150);
   };
 
   const handleInviteChange = (index, field, value) => {
@@ -41,12 +47,10 @@ export const OnboardingWizard = () => {
   };
 
   const addInviteRow = () => setInvites([...invites, { email: '', role: 'employee' }]);
-  const removeInviteRow = (index) => setInvites(invites.filter((_, i) => i !== index));
 
   const handleFinish = async () => {
     setLoading(true);
     try {
-      // 1. Activate selected modules
       if (selectedModules.length > 0) {
         const activations = selectedModules.map(modId => ({
           organization_id: activeOrganization.id,
@@ -57,7 +61,6 @@ export const OnboardingWizard = () => {
         await refreshModules();
       }
 
-      // 2. Send invites
       const validInvites = invites.filter(inv => inv.email.trim());
       for (const invite of validInvites) {
         try {
@@ -67,151 +70,234 @@ export const OnboardingWizard = () => {
         }
       }
 
-      // 3. Mark onboarding complete
       await orgService.completeOnboarding(activeOrganization.id);
       await refreshOrganizations();
-      
-      // The OrgContext will update and App.jsx routing will see onboarding_completed=true
-      // But we can also force navigate
       navigate('/dashboard', { replace: true });
     } catch (err) {
       console.error("Failed to finish onboarding", err);
-      alert("Failed to complete setup. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  return (
-    <div className="min-h-screen bg-surface flex flex-col items-center py-12 px-4 sm:px-6 lg:px-8 font-body-md text-on-surface">
-      
-      <div className="w-full max-w-3xl">
-        <div className="mb-8 flex items-center justify-between">
-          <h1 className="font-headline-lg text-3xl font-bold text-primary">Welcome to {activeOrganization?.name}!</h1>
-          <span className="text-sm text-on-surface-variant font-medium">Step {step} of 3</span>
-        </div>
+  const stepLabels = ['Org basics', 'Structure', 'Modules', 'Invite team', 'Done'];
 
-        <div className="bg-white shadow-sm border border-outline-variant rounded-2xl p-8">
+  return (
+    <div className="min-h-screen bg-surface flex flex-col md:flex-row font-body-md text-on-surface selection:bg-on-surface-variant/30">
+      
+      {/* Persistent Left-Hand Step Rail */}
+      <aside className="w-full md:w-64 bg-primary-container border-r border-outline-variant p-8 flex flex-col">
+        <div className="mb-12 font-display-md text-white text-xl tracking-tight font-bold">Crewly</div>
+        <nav className="flex flex-col gap-6">
+          {stepLabels.map((label, idx) => {
+            const num = idx + 1;
+            const isActive = step === num;
+            const isPast = step > num;
+            return (
+              <div key={num} className={`flex items-center gap-4 ${isActive ? 'text-[#E8A23C]' : isPast ? 'text-on-surface' : 'text-on-surface-variant/50'}`}>
+                <div className={`font-mono text-sm ${isActive ? 'opacity-100' : 'opacity-0'}`}>&gt;</div>
+                <div className="font-medium text-sm flex items-center gap-2">
+                  <span className="font-mono text-xs">{num}</span>
+                  {label}
+                </div>
+              </div>
+            );
+          })}
+        </nav>
+      </aside>
+
+      {/* Main Content Area */}
+      <main className="flex-1 p-8 md:p-16 overflow-y-auto bg-surface-container-lowest">
+        <div className="max-w-4xl mx-auto">
           
           {step === 1 && (
-            <div className="space-y-6">
-              <h2 className="text-2xl font-bold">Confirm your details</h2>
-              <p className="text-on-surface-variant">Before we jump in, let's make sure everything looks right.</p>
+            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <div>
+                <h1 className="text-3xl font-display-md text-on-surface mb-2 font-bold">Organization basics</h1>
+                <p className="text-on-surface-variant font-body-md">Confirm your organization details.</p>
+              </div>
               
-              <div className="grid grid-cols-2 gap-6 bg-surface-container-lowest p-6 rounded-xl border border-outline-variant">
-                <div>
-                  <p className="text-sm font-bold text-on-surface-variant mb-1">Organization Name</p>
-                  <p className="text-lg">{activeOrganization?.name}</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-surface-container border border-outline-variant p-6 rounded-sm">
+                  <p className="font-medium text-on-surface-variant mb-2 text-sm">Workspace Name</p>
+                  <p className="text-lg font-body-md text-on-surface font-medium">{activeOrganization?.name}</p>
                 </div>
-                <div>
-                  <p className="text-sm font-bold text-on-surface-variant mb-1">Workspace URL</p>
-                  <p className="text-lg">{activeOrganization?.slug}.crewly.com</p>
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-on-surface-variant mb-1">Industry</p>
-                  <p className="text-lg">{activeOrganization?.industry || 'Not specified'}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-on-surface-variant mb-1">Company Size</p>
-                  <p className="text-lg">{activeOrganization?.size || 'Not specified'}</p>
+                <div className="bg-surface-container border border-outline-variant p-6 rounded-sm">
+                  <p className="font-medium text-on-surface-variant mb-2 text-sm">Subdomain</p>
+                  <p className="text-lg font-mono text-[#2F9E8F]">{activeOrganization?.slug}.crewly.com</p>
                 </div>
               </div>
               
-              <div className="pt-4 flex justify-end">
-                <Button onClick={handleNext}>Looks Good &rarr;</Button>
+              <div className="pt-8 border-t border-outline-variant flex items-center justify-between">
+                <div></div>
+                <button 
+                  onClick={handleNext}
+                  className="bg-[#E8A23C] hover:bg-[#d69536] text-primary-container px-6 py-3 font-medium rounded-sm transition-colors text-base shadow-sm"
+                >
+                  Proceed
+                </button>
               </div>
             </div>
           )}
 
           {step === 2 && (
-            <div className="space-y-6">
-              <h2 className="text-2xl font-bold">Choose your starter modules</h2>
-              <p className="text-on-surface-variant">Select the tools you'd like to test out during your trial. You can change this at any time in the Marketplace.</p>
+            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <div>
+                <h1 className="text-3xl font-display-md text-on-surface mb-2 font-bold">Define structure</h1>
+                <p className="text-on-surface-variant font-body-md">Set up your departments.</p>
+              </div>
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {AVAILABLE_MODULES.map(mod => {
-                  const isSelected = selectedModules.includes(mod.id);
-                  return (
-                    <div 
-                      key={mod.id} 
-                      onClick={() => toggleModule(mod.id)}
-                      className={`cursor-pointer p-4 rounded-xl border-2 transition-all flex flex-col items-start ${isSelected ? 'border-primary bg-primary/5' : 'border-outline-variant hover:border-outline'}`}
-                    >
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-3 ${isSelected ? 'bg-primary text-white' : 'bg-surface-container text-on-surface-variant'}`}>
-                        <span className="material-symbols-outlined text-[24px]">{mod.icon}</span>
-                      </div>
-                      <h3 className="font-bold text-base mb-1">{mod.name}</h3>
-                      <p className="text-sm text-on-surface-variant line-clamp-2 leading-tight">{mod.desc}</p>
-                    </div>
-                  );
-                })}
+              <div className="space-y-4">
+                {departments.map((dept, idx) => (
+                  <div key={idx} className="flex items-center gap-4 bg-surface-container border border-outline-variant p-4 rounded-sm">
+                    <span className="material-symbols-outlined text-on-surface-variant">account_tree</span>
+                    <input 
+                      type="text" 
+                      value={dept}
+                      onChange={(e) => {
+                        const newD = [...departments];
+                        newD[idx] = e.target.value;
+                        setDepartments(newD);
+                      }}
+                      className="bg-transparent border-none focus:outline-none focus:ring-0 font-body-md text-on-surface w-full"
+                    />
+                  </div>
+                ))}
+                <button 
+                  onClick={() => setDepartments([...departments, ''])}
+                  className="flex items-center gap-2 text-[#2F9E8F] font-medium text-sm hover:text-[#248174]"
+                >
+                  <span className="material-symbols-outlined text-sm">add</span> Add department
+                </button>
               </div>
 
-              <div className="pt-4 flex justify-between">
-                <Button variant="outline" onClick={handleBack}>&larr; Back</Button>
-                <div className="space-x-3">
-                  <Button variant="secondary" onClick={handleNext}>Skip</Button>
-                  <Button onClick={handleNext}>Continue</Button>
-                </div>
+              <div className="pt-8 border-t border-outline-variant flex items-center justify-between">
+                <button onClick={handleNext} className="text-on-surface-variant hover:text-on-surface font-medium text-sm transition-colors">
+                  Skip for now
+                </button>
+                <button 
+                  onClick={handleNext}
+                  className="bg-[#E8A23C] hover:bg-[#d69536] text-primary-container px-6 py-3 font-medium rounded-sm transition-colors text-base shadow-sm"
+                >
+                  Proceed
+                </button>
               </div>
             </div>
           )}
 
           {step === 3 && (
-            <div className="space-y-6">
-              <h2 className="text-2xl font-bold">Invite your team</h2>
-              <p className="text-on-surface-variant">Bring your first few team members on board. You can also skip this and do it later from the Employee Directory.</p>
+            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <div>
+                <h1 className="text-3xl font-display-md text-on-surface mb-2 font-bold">Choose starter modules</h1>
+                <p className="text-on-surface-variant font-body-md">Turn on the modules you need.</p>
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {AVAILABLE_MODULES.map(mod => (
+                  <ModulePanel
+                    key={mod.id}
+                    title={mod.name}
+                    description={mod.desc}
+                    icon={mod.icon}
+                    status={selectedModules.includes(mod.id) ? 'active' : 'inactive'}
+                    interactive={true}
+                    onToggle={() => toggleModule(mod.id)}
+                    isTransitioning={transitioningMod === mod.id}
+                  />
+                ))}
+              </div>
+
+              <div className="pt-8 border-t border-outline-variant flex items-center justify-between">
+                <button onClick={handleNext} className="text-on-surface-variant hover:text-on-surface font-medium text-sm transition-colors">
+                  Skip for now
+                </button>
+                <button 
+                  onClick={handleNext}
+                  className="bg-[#E8A23C] hover:bg-[#d69536] text-primary-container px-6 py-3 font-medium rounded-sm transition-colors text-base shadow-sm"
+                >
+                  Proceed
+                </button>
+              </div>
+            </div>
+          )}
+
+          {step === 4 && (
+            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <div>
+                <h1 className="text-3xl font-display-md text-on-surface mb-2 font-bold">Invite your team</h1>
+                <p className="text-on-surface-variant font-body-md">Add your first employees.</p>
+              </div>
               
               <div className="space-y-4">
                 {invites.map((invite, index) => (
-                  <div key={index} className="flex items-center gap-4">
+                  <div key={index} className="flex flex-col sm:flex-row sm:items-center gap-4">
                     <input
                       type="email"
-                      placeholder="colleague@example.com"
+                      placeholder="name@company.com"
                       value={invite.email}
                       onChange={(e) => handleInviteChange(index, 'email', e.target.value)}
-                      className="flex-1 px-4 py-2 border border-outline rounded-lg focus:outline-none focus:border-primary"
+                      className="flex-1 bg-surface-container border border-outline-variant p-4 rounded-sm font-body-md focus:outline-none focus:border-[#E8A23C] transition-colors"
                     />
                     <select
                       value={invite.role}
                       onChange={(e) => handleInviteChange(index, 'role', e.target.value)}
-                      className="px-4 py-2 border border-outline rounded-lg focus:outline-none focus:border-primary bg-white"
+                      className="w-full sm:w-48 bg-surface-container border border-outline-variant p-4 rounded-sm font-medium text-sm focus:outline-none focus:border-[#E8A23C] transition-colors appearance-none text-on-surface"
                     >
                       <option value="employee">Employee</option>
                       <option value="manager">Manager</option>
                       <option value="org_admin">Admin</option>
                     </select>
-                    {invites.length > 1 && (
-                      <button onClick={() => removeInviteRow(index)} className="p-2 text-error hover:bg-error/10 rounded-full">
-                        <span className="material-symbols-outlined">delete</span>
-                      </button>
-                    )}
                   </div>
                 ))}
                 
-                <button onClick={addInviteRow} className="flex items-center gap-2 text-primary font-medium hover:underline text-sm mt-2">
-                  <span className="material-symbols-outlined text-[18px]">add</span> Add another
+                <button onClick={addInviteRow} className="flex items-center gap-2 text-[#2F9E8F] font-medium text-sm hover:text-[#248174]">
+                  <span className="material-symbols-outlined text-sm">add</span> Add row
                 </button>
               </div>
 
-              <div className="pt-8 flex justify-between items-center border-t border-outline-variant">
-                <Button variant="outline" onClick={handleBack}>&larr; Back</Button>
-                <div className="space-x-3">
-                  {invites.every(inv => !inv.email.trim()) && (
-                    <Button variant="ghost" onClick={handleFinish} isLoading={loading}>
-                      Skip for now
-                    </Button>
-                  )}
-                  <Button isLoading={loading} onClick={handleFinish}>
-                    {invites.some(inv => inv.email.trim()) ? 'Send Invites & Finish' : 'Finish Setup'}
-                  </Button>
-                </div>
+              <div className="pt-8 border-t border-outline-variant flex items-center justify-between">
+                <button onClick={handleNext} className="text-on-surface-variant hover:text-on-surface font-medium text-sm transition-colors">
+                  Skip for now
+                </button>
+                <button 
+                  onClick={handleNext}
+                  className="bg-[#E8A23C] hover:bg-[#d69536] text-primary-container px-6 py-3 font-medium rounded-sm transition-colors text-base shadow-sm"
+                >
+                  Proceed
+                </button>
+              </div>
+            </div>
+          )}
+
+          {step === 5 && (
+            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <div>
+                <h1 className="text-3xl font-display-md text-on-surface mb-2 font-bold">Your workspace is ready</h1>
+                <p className="text-on-surface-variant font-body-md">You will now be redirected to the command center.</p>
+              </div>
+              
+              <div className="bg-surface-container border border-outline-variant p-8 rounded-sm flex flex-col items-center justify-center py-16">
+                 <div className="w-16 h-16 bg-[#2F9E8F]/20 rounded-full flex items-center justify-center mb-6">
+                    <span className="material-symbols-outlined text-3xl text-[#2F9E8F]">check</span>
+                 </div>
+                 <p className="font-body-md text-on-surface">Setup complete.</p>
+              </div>
+
+              <div className="pt-8 border-t border-outline-variant flex items-center justify-between">
+                <div></div>
+                <button 
+                  onClick={handleFinish}
+                  disabled={loading}
+                  className="bg-[#E8A23C] hover:bg-[#d69536] text-primary-container px-6 py-3 font-medium rounded-sm transition-colors shadow-sm disabled:opacity-50"
+                >
+                  {loading ? 'Entering...' : 'Enter workspace'}
+                </button>
               </div>
             </div>
           )}
 
         </div>
-      </div>
+      </main>
     </div>
   );
 };
