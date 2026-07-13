@@ -1,17 +1,7 @@
 import React from 'react';
 
 /**
- * The signature Module Panel component representing the core thesis of Crewly.
- * 
- * @param {string} title - The name of the module.
- * @param {string} description - Brief description of the module.
- * @param {string} icon - Material Symbols icon name.
- * @param {'active' | 'inactive' | 'trial' | 'locked'} status - The current status of the module.
- * @param {boolean} interactive - Whether the panel has a toggle control.
- * @param {function} onToggle - Click handler for the toggle control.
- * @param {boolean} isTransitioning - True if the module is actively toggling on/off (mechanical transition).
- * @param {number} delayIndex - Index for staggered load animation.
- * @param {'default' | 'small'} size - Controls panel density.
+ * Modern App Store style Module Panel.
  */
 export const ModulePanel = ({
   title,
@@ -24,29 +14,23 @@ export const ModulePanel = ({
   delayIndex = 0,
   size = 'default'
 }) => {
-  // Determine indicator color and animation based on strict status rules
-  let indicatorColorClass = 'bg-surface-variant'; // Dim gray (inactive)
-  let indicatorAnimation = '';
-  
   const isActive = status === 'active';
   const isLocked = status === 'locked';
   
-  if (isActive) {
-    indicatorColorClass = 'bg-[#E8A23C]'; // --signal-amber
-    indicatorAnimation = 'animate-pulse-amber shadow-[0_0_8px_rgba(232,162,60,0.4)]';
-  } else if (status === 'trial') {
-    indicatorColorClass = 'bg-[#2F9E8F]'; // --current-teal
-    indicatorAnimation = 'animate-pulse-teal shadow-[0_0_8px_rgba(47,158,143,0.4)]';
-  } else if (isLocked) {
-    indicatorColorClass = 'bg-[#C4453A]'; // --alert-red
+  // Icon squircle background colors
+  let iconBgClass = 'bg-primary/10 text-primary';
+  if (icon === 'schedule' || icon === 'event_available') iconBgClass = 'bg-[#10B981]/10 text-[#10B981]'; // Green for HR
+  if (icon === 'payments' || icon === 'account_balance') iconBgClass = 'bg-[#F59E0B]/10 text-[#F59E0B]'; // Amber for Finance
+  if (icon === 'handshake' || icon === 'support_agent') iconBgClass = 'bg-[#8B5CF6]/10 text-[#8B5CF6]'; // Purple for Customer
+  if (icon === 'account_tree' || icon === 'inventory_2') iconBgClass = 'bg-[#3B82F6]/10 text-[#3B82F6]'; // Blue for Ops
+
+  if (isLocked) {
+    iconBgClass = 'bg-surface-container text-on-surface-variant';
   }
 
   const isSmall = size === 'small';
-
-  // Handle mechanical transition when toggling
-  const transitionStyles = isTransitioning ? "opacity-80 scale-[0.98]" : "opacity-100 scale-100";
+  const transitionStyles = isTransitioning ? "opacity-70 scale-[0.98]" : "opacity-100 scale-100";
   
-  // Staggered load animation style
   const style = delayIndex > 0 ? {
     animationDelay: `${delayIndex * 60}ms`,
     animationFillMode: 'both'
@@ -56,53 +40,66 @@ export const ModulePanel = ({
 
   return (
     <div 
-      className={`relative flex flex-col bg-surface-container-lowest border border-outline-variant rounded-sm ${isSmall ? 'p-4' : 'p-6'} text-left ${transitionStyles} ${animateInClass} w-full h-full ${isLocked ? 'opacity-70' : ''}`}
+      className={`relative flex flex-col bg-white border border-outline-variant rounded-2xl ${isSmall ? 'p-4' : 'p-6'} text-left ${transitionStyles} ${animateInClass} w-full h-full hover:shadow-md hover:border-outline transition-all duration-300 ${isLocked ? 'opacity-80' : ''}`}
       style={style}
     >
-      {/* Signature 8px Indicator Light, strictly positioned top-right */}
-      <div className={`absolute ${isSmall ? 'top-3 right-3' : 'top-4 right-4'} w-2 h-2 rounded-full overflow-visible flex items-center justify-center`}>
-         <div className={`w-2 h-2 rounded-full ${indicatorColorClass} ${indicatorAnimation}`}></div>
+      <div className="flex gap-4">
+        {/* Squircle Icon */}
+        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-sm ${iconBgClass}`}>
+          <span className="material-symbols-outlined text-[28px]">{icon}</span>
+        </div>
+        
+        <div className="flex flex-col flex-grow">
+          {/* Text */}
+          <h3 className={`font-display-md text-on-surface font-bold tracking-tight ${isSmall ? 'text-sm mb-0' : 'text-lg mb-1'}`}>{title}</h3>
+          
+          {!isSmall && (
+            <p className="font-body-md text-on-surface-variant text-sm leading-relaxed line-clamp-2">
+              {description}
+            </p>
+          )}
+        </div>
       </div>
       
-      {/* Icon */}
-      <div className={`text-on-surface ${isSmall ? 'mb-2' : 'mb-4'}`}>
-        <span className={`material-symbols-outlined ${isSmall ? 'text-[24px]' : 'text-[32px]'} font-light ${isLocked ? 'text-[#C4453A]' : ''}`}>{icon}</span>
-      </div>
-      
-      {/* Text */}
-      <h3 className={`font-display-md text-on-surface ${isSmall ? 'text-sm mb-0' : 'text-xl mb-2'}`}>{title}</h3>
-      
+      {/* Footer Button */}
       {!isSmall && (
-        <p className="font-body-md text-on-surface-variant text-sm flex-grow leading-relaxed">
-          {description}
-        </p>
-      )}
-      
-      {/* Toggle Control / Status Footer */}
-      {!isSmall && (
-        <div className="mt-6 pt-4 border-t border-outline-variant/30 flex items-center justify-between w-full h-10">
+        <div className="mt-auto pt-6 flex items-center justify-between w-full">
            {isLocked ? (
-             <span className="font-label-md text-[#C4453A] uppercase tracking-widest text-[10px] flex items-center gap-2">
-               <span className="material-symbols-outlined text-[14px]">lock</span>
-               Requires Enterprise Plan
-             </span>
-           ) : interactive ? (
-             <div className="flex items-center gap-3">
-               <span className="font-label-md text-on-surface-variant uppercase tracking-widest text-[10px]">
-                 {isActive ? 'Module Active' : 'Module Offline'}
+             <div className="flex items-center justify-between w-full">
+               <span className="font-medium text-error text-xs flex items-center gap-1.5 bg-error-container px-2.5 py-1 rounded-full">
+                 <span className="material-symbols-outlined text-[14px]">lock</span>
+                 Pro Plan
                </span>
+               <button className="text-xs font-semibold px-4 py-1.5 bg-surface-container text-on-surface-variant rounded-full cursor-not-allowed">
+                 Upgrade
+               </button>
+             </div>
+           ) : interactive ? (
+             <div className="flex items-center justify-between w-full">
+               {isActive ? (
+                 <span className="text-xs font-medium text-current-teal flex items-center gap-1">
+                   Installed
+                 </span>
+               ) : (
+                 <span className="text-xs font-medium text-on-surface-variant">
+                   Available
+                 </span>
+               )}
                <button
                  onClick={onToggle}
                  disabled={isTransitioning}
-                 className="relative w-10 h-5 bg-surface-container border border-outline-variant rounded-full overflow-hidden transition-colors outline-none focus:border-[#E8A23C]"
-                 aria-label={`Toggle ${title}`}
+                 className={`text-xs font-bold px-5 py-1.5 rounded-full transition-all duration-200 active:scale-95 ${
+                   isActive
+                     ? 'bg-surface-container text-on-surface hover:bg-outline-variant shadow-sm'
+                     : 'bg-primary text-white hover:bg-primary/90 shadow-sm'
+                 }`}
                >
-                 <div className={`absolute top-0.5 left-0.5 w-3.5 h-3.5 rounded-full transition-transform duration-150 ${isActive ? 'translate-x-5 bg-[#E8A23C]' : 'translate-x-0 bg-outline-variant'}`}></div>
+                 {isActive ? 'Open' : 'Get'}
                </button>
              </div>
            ) : (
-             <span className="font-label-md text-on-surface-variant/50 uppercase tracking-widest text-[10px]">
-               CRWLY // OS
+             <span className="font-medium text-on-surface-variant/50 text-xs">
+               System Module
              </span>
            )}
         </div>

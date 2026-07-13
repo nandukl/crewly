@@ -1,44 +1,47 @@
 @import "tailwindcss";
 
 @theme {
-  --color-graphite: #14161A;
-  --color-panel: #F3F3F0;
-  --color-ink: #22262B;
-  --color-circuit: #C9CCC7;
-  --color-signal-amber: #E8A23C;
-  --color-current-teal: #2F9E8F;
-  --color-alert-red: #C4453A;
+  /* Concept 1: Modern App Store Palette */
+  --color-graphite: #111827; /* Gray 900 */
+  --color-panel: #F9FAFB; /* Gray 50 */
+  --color-ink: #111827; /* Gray 900 */
+  --color-circuit: #E5E7EB; /* Gray 200 */
+  --color-signal-amber: #F59E0B; /* Amber 500 */
+  --color-current-teal: #10B981; /* Emerald 500 */
+  --color-alert-red: #EF4444; /* Red 500 */
+  --color-brand-blue: #2563EB; /* Blue 600 */
 
   /* Aliasing Tailwind's typical functional names to our strict tokens for compatibility where needed */
   --color-background: var(--color-panel);
-  --color-surface: var(--color-panel);
-  --color-surface-container: #ebebe6;
-  --color-surface-container-lowest: #ffffff;
+  --color-surface: #FFFFFF;
+  --color-surface-container: #F3F4F6; /* Gray 100 */
+  --color-surface-container-lowest: #FFFFFF;
   --color-on-background: var(--color-ink);
   --color-on-surface: var(--color-ink);
-  --color-on-surface-variant: #5c626b;
+  --color-on-surface-variant: #6B7280; /* Gray 500 */
   
-  --color-primary: var(--color-ink);
-  --color-on-primary: var(--color-panel);
-  --color-primary-container: var(--color-graphite);
-  --color-on-primary-container: #ffffff;
+  --color-primary: var(--color-brand-blue);
+  --color-on-primary: #ffffff;
+  --color-primary-container: #EFF6FF; /* Blue 50 */
+  --color-on-primary-container: #1D4ED8; /* Blue 700 */
 
   --color-secondary: var(--color-graphite);
   --color-on-secondary: #ffffff;
 
   --color-error: var(--color-alert-red);
-  --color-error-container: #fceceb;
+  --color-error-container: #FEF2F2; /* Red 50 */
   --color-on-error: #ffffff;
-  --color-on-error-container: #7a1f18;
+  --color-on-error-container: #B91C1C; /* Red 700 */
 
   --color-outline: var(--color-circuit);
-  --color-outline-variant: var(--color-circuit);
+  --color-outline-variant: #F3F4F6;
 
-  --radius-sm: 0px;
-  --radius-DEFAULT: 8px;
-  --radius-md: 8px;
-  --radius-lg: 8px;
-  --radius-xl: 8px;
+  /* Softer, larger border radii for the "App Store" look */
+  --radius-sm: 8px;
+  --radius-DEFAULT: 12px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-xl: 32px;
   --radius-full: 9999px;
 
   --spacing-container-max: 1440px;
@@ -52,22 +55,22 @@
   --spacing-gutter: 24px;
   --spacing-sm: 8px;
 
-  --font-body-lg: 'IBM Plex Sans', sans-serif;
-  --font-label-md: 'IBM Plex Mono', monospace;
-  --font-headline-lg-mobile: 'Space Grotesk', sans-serif;
-  --font-headline-md: 'Space Grotesk', sans-serif;
-  --font-display-lg: 'Space Grotesk', sans-serif;
-  --font-body-md: 'IBM Plex Sans', sans-serif;
+  --font-body-lg: 'Inter', 'IBM Plex Sans', sans-serif;
+  --font-label-md: 'Inter', sans-serif;
+  --font-headline-lg-mobile: 'Inter', sans-serif;
+  --font-headline-md: 'Inter', sans-serif;
+  --font-display-lg: 'Inter', sans-serif;
+  --font-body-md: 'Inter', 'IBM Plex Sans', sans-serif;
   --font-code-sm: 'IBM Plex Mono', monospace;
-  --font-title-lg: 'Space Grotesk', sans-serif;
-  --font-headline-lg: 'Space Grotesk', sans-serif;
+  --font-title-lg: 'Inter', sans-serif;
+  --font-headline-lg: 'Inter', sans-serif;
 
   --text-body-lg: 16px;
   --text-body-lg--line-height: 24px;
   --text-body-lg--font-weight: 400;
 
-  --text-label-md: 12px;
-  --text-label-md--line-height: 16px;
+  --text-label-md: 13px;
+  --text-label-md--line-height: 18px;
   --text-label-md--font-weight: 500;
 
   --text-headline-lg-mobile: 24px;

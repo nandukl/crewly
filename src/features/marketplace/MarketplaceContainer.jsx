@@ -23,20 +23,19 @@ export const MarketplaceContainer = () => {
 
   if (!isAdmin) {
     return (
-      <div className="p-xl text-center">
-        <span className="material-symbols-outlined text-[64px] text-on-surface-variant opacity-50 mb-4">storefront</span>
-        <h2 className="font-display-md text-2xl text-on-surface font-bold">App Marketplace</h2>
-        <p className="text-on-surface-variant mt-2 font-body-md">Only organization administrators can install or remove modules.</p>
+      <div className="p-xl text-center bg-white border border-outline-variant rounded-3xl max-w-2xl mx-auto shadow-sm mt-12">
+        <span className="material-symbols-outlined text-[64px] text-primary/50 mb-4">storefront</span>
+        <h2 className="font-display-md text-2xl text-on-surface font-bold tracking-tight">App Store</h2>
+        <p className="text-on-surface-variant mt-2 font-body-md">Only organization administrators can install or remove apps.</p>
       </div>
     );
   }
 
   const handleToggle = async (moduleId, currentlyActive) => {
-    // Set mechanical transition state
     setTransitioningMods(prev => ({ ...prev, [moduleId]: true }));
     
-    // Simulate mechanical physical switch delay (150ms)
-    await new Promise(resolve => setTimeout(resolve, 150));
+    // Simulate slight download/install delay
+    await new Promise(resolve => setTimeout(resolve, 300));
 
     try {
       if (currentlyActive) {
@@ -52,7 +51,7 @@ export const MarketplaceContainer = () => {
       await refreshModules();
     } catch (err) {
       console.error("Error toggling module:", err);
-      alert("Failed to update module status.");
+      alert("Failed to install app.");
     } finally {
       setTransitioningMods(prev => ({ ...prev, [moduleId]: false }));
     }
@@ -63,18 +62,17 @@ export const MarketplaceContainer = () => {
 
   return (
     <div className="max-w-7xl space-y-12 pb-24">
-      <div>
-        <h2 className="font-display-md text-3xl text-on-surface mb-2 font-bold">Marketplace</h2>
-        <p className="text-on-surface-variant font-body-md max-w-2xl">
-          Toggle the control panels to activate or deactivate modules. You only pay for what is currently active.
+      <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-8 rounded-3xl border border-primary/10">
+        <h2 className="font-display-md text-3xl text-on-surface mb-2 font-bold tracking-tight">App Store</h2>
+        <p className="text-on-surface-variant font-body-md max-w-2xl text-base">
+          Browse and install powerful apps to extend your workspace. You only pay for what you use.
         </p>
       </div>
 
       {activeList.length > 0 && (
         <section>
-          <div className="flex items-center gap-3 mb-6 border-b border-outline-variant/50 pb-2">
-            <span className="w-2 h-2 rounded-full bg-[#E8A23C] shadow-[0_0_8px_rgba(232,162,60,0.4)]"></span>
-            <h3 className="font-medium text-sm text-on-surface-variant">Active modules</h3>
+          <div className="flex items-center gap-3 mb-6">
+            <h3 className="font-display-md font-bold text-xl text-on-surface tracking-tight">Installed Apps</h3>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {activeList.map(mod => {
@@ -98,15 +96,12 @@ export const MarketplaceContainer = () => {
 
       {availableList.length > 0 && (
         <section>
-          <div className="flex items-center gap-3 mb-6 border-b border-outline-variant/50 pb-2 mt-12">
-            <span className="w-2 h-2 rounded-full bg-outline-variant"></span>
-            <h3 className="font-medium text-sm text-on-surface-variant">Available to activate</h3>
+          <div className="flex items-center gap-3 mb-6 mt-12">
+            <h3 className="font-display-md font-bold text-xl text-on-surface tracking-tight">Discover Apps</h3>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {availableList.map(mod => {
               const isTransitioning = !!transitioningMods[mod.id];
-              // Simulate a locked state for demonstration (Finance requires a pro plan that this org might not have)
-              // In reality, this would check activeOrganization.subscription_tier
               const isLocked = mod.pro; 
               
               return (

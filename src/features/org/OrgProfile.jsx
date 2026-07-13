@@ -8,7 +8,22 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { FileUploader } from '../storage/FileUploader';
 import { OrgLogo } from './OrgLogo';
+import { AISetupAssistant } from '../tenant/AISetupAssistant';
+import { supabase } from '../../lib/supabaseClient';
 import en from '../../locales/en.json';
+
+const AVAILABLE_MODULES = [
+  { id: 'hr', name: 'HR & directory', icon: 'groups' },
+  { id: 'attendance', name: 'Attendance', icon: 'schedule' },
+  { id: 'leave', name: 'Leave management', icon: 'event_available' },
+  { id: 'payroll', name: 'Payroll', icon: 'payments' },
+  { id: 'performance', name: 'Performance', icon: 'trending_up' },
+  { id: 'crm', name: 'CRM', icon: 'handshake' },
+  { id: 'projects', name: 'Projects', icon: 'account_tree' },
+  { id: 'helpdesk', name: 'Help desk', icon: 'support_agent' },
+  { id: 'inventory', name: 'Inventory', icon: 'inventory_2' },
+  { id: 'finance', name: 'Finance & expenses', icon: 'account_balance' }
+];
 
 const schema = z.object({
   name: z.string().min(1, 'Organization Name is required'),
@@ -22,13 +37,14 @@ const schema = z.object({
 });
 
 export const OrgProfile = () => {
-  const { activeOrganization, currentMembership, refreshOrganizations } = useOrg();
+  const { activeOrganization, currentMembership, refreshOrganizations, refreshModules } = useOrg();
   const { register, handleSubmit, reset, setValue, watch, formState: { errors, isDirty } } = useForm({
     resolver: zodResolver(schema),
   });
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isAIModalOpen, setIsAIModalOpen] = useState(false);
   const t = en.org.profile;
 
   useEffect(() => {
@@ -89,6 +105,14 @@ export const OrgProfile = () => {
               disabled={!isDirty || loading}
             >
               Discard Changes
+            </Button>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => setIsAIModalOpen(true)}
+            >
+              <span className="material-symbols-outlined mr-2 text-sm text-[#E8A23C]">smart_toy</span>
+              Reconfigure with AI
             </Button>
             <Button 
               type="submit" 
@@ -218,6 +242,79 @@ export const OrgProfile = () => {
           </div>
         </div>
       </div>
+
+      {isAIModalOpen && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-surface rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col relative shadow-2xl border border-outline-variant">
+            <button 
+              type="button"
+              onClick={() => setIsAIModalOpen(false)}
+              className="absolute top-4 right-4 text-on-surface-variant hover:text-on-surface z-10 w-8 h-8 flex items-center justify-center rounded-full bg-surface-container hover:bg-surface-container-high transition-colors"
+            >
+              <span className="material-symbols-outlined text-sm">close</span>
+            </button>
+            <div className="p-2 sm:p-8 overflow-y-auto flex-1">
+              <AISetupAssistant 
+                isModal={true}
+                onApplyDraft={async (draft) => {
+                  try {
+                    setLoading(true);
+                    
+                    if (draft.recommended_modules?.length > 0) {
+                       const activations = draft.recommended_modules.map(modName => {
+                         const found = AVAILABLE_MODULES.find(m => modName.toLowerCase().includes(m.id) || m.name.toLowerCase().includes(modName.toLowerCase()));
+                         return found ? { organization_id: activeOrganization.id, module_key: found.id, is_active: true } : null;
+                       }).filter(Boolean);
+                       if (activations.length > 0) {
+                          await supabase.from('org_module_activations').upsert(activations);
+                       }
+                    }
+
+                    if (draft.suggested_departments?.length > 0) {
+                      const depts = draft.suggested_departments.filter(d => d !== 'None new').map(d => ({
+                        organization_id: activeOrganization.id,
+                        name: d
+                      }));
+                      if (depts.length > 0) await supabase.from('departments').insert(depts);
+                    }
+
+                    if (draft.suggested_leave_types?.length > 0) {
+                      const leaveTypes = draft.suggested_leave_types.map(lt => ({
+                        organization_id: activeOrganization.id,
+                        name: lt.name,
+                        description: lt.description || '',
+                        days_allowed: 10,
+                        requires_approval: true
+                      }));
+                      if (leaveTypes.length > 0) await supabase.from('leave_types').insert(leaveTypes);
+                    }
+                    
+                    if (draft.suggested_salary_components?.length > 0) {
+                      const salaryComps = draft.suggested_salary_components.map(sc => ({
+                        organization_id: activeOrganization.id,
+                        name: sc.name,
+                        type: sc.type,
+                        default_value: 0
+                      }));
+                      if (salaryComps.length > 0) await supabase.from('salary_components').insert(salaryComps);
+                    }
+
+                    if (refreshModules) await refreshModules();
+                    setIsAIModalOpen(false);
+                    setSuccess(true);
+                    setTimeout(() => setSuccess(false), 3000);
+                  } catch (err) {
+                    console.error("AI apply error:", err);
+                    setError("Failed to apply AI setup.");
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </form>
   );
 };

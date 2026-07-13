@@ -7,7 +7,6 @@ export const AdminHome = () => {
   
   const displayName = currentMembership?.email?.split('@')[0] || 'Admin';
 
-  // Mock checklist logic - in a real app this would be driven by backend state
   const checklist = [
     { id: 'org', label: 'Verify workspace details', done: true },
     { id: 'modules', label: 'Activate initial modules', done: activeModules?.length > 0 },
@@ -20,30 +19,42 @@ export const AdminHome = () => {
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300 pb-24">
       
-      {/* Strict Control Panel Header */}
-      <div className="bg-surface-container-lowest border border-outline-variant rounded-sm p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            <span className="w-2 h-2 rounded-full bg-[#2F9E8F] animate-pulse-teal"></span>
-            <span className="font-medium text-xs text-on-surface-variant">System active</span>
+      {/* Header */}
+      <div className="bg-white border border-outline-variant shadow-sm rounded-3xl p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative overflow-hidden">
+        {/* Soft background gradient */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
+
+        <div className="relative z-10">
+          <div className="flex items-center gap-2 mb-2 bg-surface-container px-3 py-1 rounded-full w-fit">
+            <span className="w-2 h-2 rounded-full bg-[#10B981] shadow-[0_0_8px_rgba(16,185,129,0.4)] animate-pulse"></span>
+            <span className="font-semibold text-xs text-on-surface-variant">System active</span>
           </div>
-          <h1 className="text-3xl font-display-md text-on-surface font-bold">Welcome back, {displayName}</h1>
-          <p className="text-on-surface-variant font-body-md mt-1">High-level overview for {activeOrganization?.name}.</p>
+          <h1 className="text-4xl font-display-md text-on-surface font-bold tracking-tight">Welcome back, {displayName}</h1>
+          <p className="text-on-surface-variant font-body-md mt-2 text-lg">High-level overview for {activeOrganization?.name}.</p>
         </div>
         
         {/* Setup Progress Widget */}
-        <div className="bg-surface-container border border-outline-variant p-4 rounded-sm w-full md:w-80 flex-shrink-0">
-          <div className="flex items-center justify-between mb-3 border-b border-outline-variant/30 pb-2">
-             <span className="font-medium text-xs text-on-surface-variant">Setup checklist</span>
-             <span className="font-mono text-xs text-[#E8A23C]">{progress}%</span>
+        <div className="bg-white/50 backdrop-blur-sm border border-outline-variant shadow-sm p-5 rounded-2xl w-full md:w-80 flex-shrink-0 relative z-10">
+          <div className="flex items-center justify-between mb-4">
+             <span className="font-bold text-sm text-on-surface">Setup checklist</span>
+             <span className="font-bold text-sm text-primary">{progress}%</span>
           </div>
-          <div className="space-y-2">
+          
+          {/* Progress Bar */}
+          <div className="w-full h-2 bg-surface-container rounded-full mb-4 overflow-hidden">
+            <div 
+              className="h-full bg-primary transition-all duration-1000 ease-out rounded-full"
+              style={{ width: `${progress}%` }}
+            ></div>
+          </div>
+
+          <div className="space-y-3">
             {checklist.map(item => (
               <div key={item.id} className="flex items-center gap-3">
-                <div className={`w-4 h-4 border rounded-sm flex items-center justify-center flex-shrink-0 transition-colors ${item.done ? 'bg-[#2F9E8F] border-[#2F9E8F]' : 'border-outline-variant bg-surface'}`}>
-                  {item.done && <span className="material-symbols-outlined text-[12px] text-white">check</span>}
+                <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${item.done ? 'bg-[#10B981] text-white' : 'border border-outline-variant bg-surface-container text-transparent'}`}>
+                  <span className="material-symbols-outlined text-[14px]">check</span>
                 </div>
-                <span className={`text-sm font-medium truncate ${item.done ? 'text-on-surface-variant line-through opacity-50' : 'text-on-surface'}`}>
+                <span className={`text-sm font-medium truncate transition-colors ${item.done ? 'text-on-surface-variant line-through opacity-70' : 'text-on-surface'}`}>
                   {item.label}
                 </span>
               </div>

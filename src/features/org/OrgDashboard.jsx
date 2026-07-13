@@ -34,8 +34,16 @@ export const OrgDashboard = () => {
   const { organizations, activeOrganization, currentMembership, activeModules, loading, isTenant, subscriptionStatus } = useOrg();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('home');
+  const [visitedTabs, setVisitedTabs] = useState(() => {
+    const saved = localStorage.getItem('crewly_visited_tabs');
+    return saved ? new Set(JSON.parse(saved)) : new Set(['home']);
+  });
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem('crewly_visited_tabs', JSON.stringify(Array.from(visitedTabs)));
+  }, [visitedTabs]);
 
   useEffect(() => {
     supabase.from('user_profiles').select('is_super_admin').single().then(({data}) => {
@@ -104,36 +112,46 @@ export const OrgDashboard = () => {
   }
 
   return (
-    <div className="bg-surface font-body-md text-on-surface overflow-x-hidden min-h-screen flex flex-col">
-      {/* TopNavBar */}
-      <header className="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-4 md:px-6 h-[48px] bg-surface border-b border-outline-variant">
+    <div className="flex h-screen bg-surface-container font-body-md selection:bg-primary/30 overflow-hidden">
+      
+      {/* Top Navbar */}
+      <header className="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-4 md:px-6 h-[56px] bg-white border-b border-outline-variant shadow-sm transition-colors duration-200">
         <div className="flex items-center gap-4">
           <button 
-            className="md:hidden p-1 mr-2 text-on-surface-variant hover:text-white transition-colors"
+            className="md:hidden p-1 mr-2 text-on-surface-variant hover:text-on-surface transition-colors rounded-md hover:bg-surface-container"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
             <span className="material-symbols-outlined text-lg">{isMobileMenuOpen ? 'close' : 'menu'}</span>
           </button>
-          <span className="font-display-sm text-sm text-white font-bold hidden md:block">
-            {isTenant ? activeOrganization?.name : 'Crewly'}
-          </span>
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center shadow-sm">
+              <span className="material-symbols-outlined text-lg">widgets</span>
+            </div>
+            <span className="font-display-sm text-sm text-on-surface font-bold hidden md:block tracking-tight">
+              {isTenant ? activeOrganization?.name : 'Crewly'}
+            </span>
+          </div>
           <OrgSwitcher />
         </div>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-4 text-on-surface-variant">
-            <NotificationBell />
-            <div className="h-4 w-px bg-outline-variant"></div>
-            <button onClick={() => supabase.auth.signOut()} className="flex items-center gap-2 hover:text-white transition-colors" title="Sign Out">
-              <span className="font-medium text-xs hidden sm:block">Sign out</span>
-              <span className="material-symbols-outlined text-[16px]">logout</span>
-            </button>
-          </div>
+        
+        <div className="flex items-center gap-2">
+          {/* Mock notification bell */}
+          <button className="w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container transition-colors relative">
+             <span className="material-symbols-outlined text-[20px]">notifications</span>
+             <span className="absolute top-2 right-2.5 w-1.5 h-1.5 bg-error rounded-full"></span>
+          </button>
+          
+          <button className="flex items-center gap-2 pl-2 pr-1 py-1 rounded-full hover:bg-surface-container transition-colors border border-transparent hover:border-outline-variant">
+            <div className="w-7 h-7 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-bold text-xs">
+              {currentMembership?.email?.charAt(0).toUpperCase()}
+            </div>
+          </button>
         </div>
       </header>
 
       {/* Locked/Grace Period Banner */}
-      {subscriptionStatus && (
-        <div className="fixed top-[48px] left-0 w-full z-40">
+      {subscriptionStatus && subscriptionStatus !== 'active' && (
+        <div className="fixed top-[56px] left-0 w-full z-40">
           <BillingStatusBanner status={subscriptionStatus} />
         </div>
       )}
@@ -146,15 +164,26 @@ export const OrgDashboard = () => {
         />
       )}
 
-      <div className="flex flex-1 mt-[48px]">
-        {/* SideNavBar - Strict #14161A Graphite Panel */}
-        <aside className={`fixed left-0 top-[48px] h-[calc(100vh-48px)] w-[240px] z-40 flex flex-col pb-6 bg-[#14161A] border-r border-[#2A2C30] transform transition-transform duration-300 md:translate-x-0 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-          <div className="p-6 flex flex-col gap-4 border-b border-[#2A2C30]">
+      {/* Main Layout Container */}
+      <div className={`flex flex-1 mt-[56px] w-full ${subscriptionStatus && subscriptionStatus !== 'active' ? 'pt-12' : ''}`}>
+        
+        {/* Sidebar */}
+        <aside 
+          className={`
+            fixed md:sticky top-[56px] left-0 h-[calc(100vh-56px)] 
+            w-[240px] bg-white border-r border-outline-variant z-40 
+            flex flex-col transition-transform duration-300 ease-in-out shadow-sm
+            ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+          `}
+        >
+          <div className="p-6 flex flex-col gap-4 border-b border-outline-variant/50">
             <div className="flex items-center gap-3">
-              <OrgLogo logoUrl={activeOrganization?.logo_url} alt="Org" className="w-8 h-8 bg-[#1A1C20] border border-[#2A2C30] flex-shrink-0 object-cover rounded-sm" />
+              <OrgLogo logoUrl={activeOrganization?.logo_url} alt="Org" className="w-10 h-10 bg-surface-container border border-outline-variant flex-shrink-0 object-cover rounded-xl shadow-sm" />
               <div className="flex flex-col overflow-hidden">
-                <span className="font-medium text-sm text-white truncate">{activeOrganization?.name || 'Workspace'}</span>
-                {!isTenant && <span className="text-xs text-[#2F9E8F] truncate mt-0.5">Active</span>}
+                <span className="font-bold text-sm text-on-surface truncate tracking-tight">{activeOrganization?.name || 'Workspace'}</span>
+                {!isTenant && <span className="text-xs text-current-teal font-medium truncate mt-0.5 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-current-teal animate-pulse"></span> Active
+                </span>}
               </div>
             </div>
             
@@ -163,19 +192,19 @@ export const OrgDashboard = () => {
                 href={window.location.hostname === 'localhost' ? `http://${activeOrganization.slug}.localhost:5173` : `https://${activeOrganization.slug}.crewly.com`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-2 p-2 bg-[#1A1C20] border border-[#2A2C30] hover:border-[#3A3C40] transition-colors rounded-sm flex items-center justify-between group"
+                className="mt-2 p-3 bg-surface-container-lowest border border-outline-variant hover:border-outline hover:shadow-sm transition-all rounded-xl flex items-center justify-between group"
                 title="Open workspace"
               >
                 <div className="flex flex-col">
-                  <span className="text-[10px] font-medium text-white/50 mb-1">Open workspace</span>
-                  <span className="text-[11px] text-white/80 font-mono truncate">{activeOrganization.slug}.crewly.com</span>
+                  <span className="text-xs font-semibold text-on-surface mb-0.5">Open workspace</span>
+                  <span className="text-[11px] text-on-surface-variant font-medium truncate group-hover:text-primary transition-colors">{activeOrganization.slug}.crewly.com</span>
                 </div>
-                <span className="material-symbols-outlined text-[14px] text-white/50 group-hover:text-white">open_in_new</span>
+                <span className="material-symbols-outlined text-[16px] text-on-surface-variant group-hover:text-primary transition-colors">open_in_new</span>
               </a>
             )}
           </div>
           
-          <nav className="mt-6 flex-grow space-y-1 px-3 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto py-6 px-4 space-y-1 scrollbar-hide">
             {tabs.map((tab) => {
               const isActive = activeTab === tab.id;
               let icon = 'label';
@@ -205,38 +234,44 @@ export const OrgDashboard = () => {
                   onClick={() => {
                     setActiveTab(tab.id);
                     setIsMobileMenuOpen(false);
+                    setVisitedTabs(prev => new Set(prev).add(tab.id));
                   }}
-                  className={`w-full flex items-center justify-between px-3 py-2 transition-colors rounded-sm group ${
+                  className={`w-full flex items-center justify-between px-3 py-2.5 transition-all duration-200 rounded-xl group ${
                     isActive 
-                      ? 'bg-[#1F2125] text-white' 
-                      : 'text-white/60 hover:bg-[#1A1C20] hover:text-white'
+                      ? 'bg-primary-container text-on-primary-container font-semibold shadow-sm' 
+                      : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface'
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <span className="material-symbols-outlined text-[16px]">{icon}</span>
-                    <span className="text-sm font-medium mt-0.5">{tab.label}</span>
+                    <span className={`material-symbols-outlined text-[20px] ${isActive ? 'text-primary' : 'group-hover:text-primary transition-colors'}`}>
+                      {icon}
+                    </span>
+                    <span className="text-sm mt-0.5">{tab.label}</span>
                   </div>
-                  {tab.isModule && (
-                    <div className="flex items-center justify-center w-4 h-4">
-                      <div className="w-1.5 h-1.5 rounded-full bg-[#E8A23C] shadow-[0_0_8px_rgba(232,162,60,0.4)]"></div>
+                  {tab.isModule && !visitedTabs.has(tab.id) && (
+                    <div className="flex items-center justify-center w-5 h-5 rounded-full bg-primary/10">
+                      <div className="w-2 h-2 rounded-full bg-primary"></div>
                     </div>
                   )}
                 </button>
               );
             })}
-          </nav>
-          
-          <div className="px-6 mt-auto pt-6 border-t border-[#2A2C30]">
-            <a className="flex items-center gap-3 py-2 text-white/50 hover:text-white transition-colors text-sm font-medium" href="#">
-              <span className="material-symbols-outlined text-[16px]">help</span>
-              <span>Support</span>
-            </a>
+          </div>
+
+          <div className="p-4 border-t border-outline-variant/50">
+            <button
+              onClick={() => supabase.auth.signOut()}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-error hover:bg-error-container transition-colors group"
+            >
+              <span className="material-symbols-outlined text-[20px] group-hover:scale-110 transition-transform">logout</span>
+              <span className="mt-0.5">Sign out</span>
+            </button>
           </div>
         </aside>
 
         {/* Main Content Canvas */}
-        <main className={`flex-1 ml-0 md:ml-[240px] p-6 md:p-10 bg-surface overflow-y-auto ${subscriptionStatus ? 'mt-12' : ''}`}>
-          <div className="max-w-7xl mx-auto pb-24">
+        <main className={`flex-1 flex flex-col min-h-full overflow-y-auto bg-surface p-6 md:p-10 ${isMobileMenuOpen ? 'hidden md:block' : ''}`}>
+          <div className="w-full max-w-7xl mx-auto pb-24 h-full flex flex-col">
             {activeTab === 'home' && (isAdmin ? <AdminHome /> : <EmployeeHome />)}
             {activeTab === 'settings' && <OrgProfile />}
             {activeTab === 'analytics' && <AnalyticsContainer />}
@@ -257,6 +292,13 @@ export const OrgDashboard = () => {
             {activeTab === 'audit' && <AuditLogViewer />}
             {activeTab === 'billing' && <BillingDashboard />}
             {activeTab === 'devtools' && <SuperAdminBillingOverride orgId={activeOrganization?.id} />}
+            
+            {/* Placeholders for inactive/unimplemented tabs */}
+            {!['home', 'settings', 'analytics', 'directory', 'attendance', 'leave', 'payroll', 'performance', 'crm', 'projects', 'helpdesk', 'inventory', 'finance', 'members', 'roles', 'structure', 'marketplace', 'audit', 'billing', 'devtools'].includes(activeTab) && (
+                 <div className="flex flex-col items-center justify-center h-64 text-on-surface-variant border border-outline-variant rounded-sm bg-surface-container-lowest">
+                   <p className="font-label-md uppercase tracking-widest text-xs">Module Shell</p>
+                 </div>
+            )}
           </div>
         </main>
       </div>

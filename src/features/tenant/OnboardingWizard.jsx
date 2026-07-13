@@ -4,6 +4,7 @@ import { useOrg } from '../org/OrgContext';
 import { orgService } from '../../lib/orgService';
 import { supabase } from '../../lib/supabaseClient';
 import { ModulePanel } from '../../components/ui/ModulePanel';
+import { AISetupAssistant } from './AISetupAssistant';
 
 const AVAILABLE_MODULES = [
   { id: 'hr', name: 'HR & directory', icon: 'groups', desc: 'Centralized employee directory, org charts, and core records.' },
@@ -27,6 +28,7 @@ export const OnboardingWizard = () => {
   const [transitioningMod, setTransitioningMod] = useState(null);
   const [invites, setInvites] = useState([{ email: '', role: 'employee' }]);
   const [departments, setDepartments] = useState(['Engineering', 'Sales', 'HR']);
+  const [draftData, setDraftData] = useState(null);
 
   const handleNext = () => setStep(s => s + 1);
 
@@ -61,6 +63,29 @@ export const OnboardingWizard = () => {
         await refreshModules();
       }
 
+      if (draftData) {
+        if (draftData.suggested_leave_types?.length > 0) {
+          const leaveTypes = draftData.suggested_leave_types.map(lt => ({
+            organization_id: activeOrganization.id,
+            name: lt.name,
+            description: lt.description || '',
+            days_allowed: 10,
+            requires_approval: true
+          }));
+          await supabase.from('leave_types').insert(leaveTypes);
+        }
+        
+        if (draftData.suggested_salary_components?.length > 0) {
+          const salaryComps = draftData.suggested_salary_components.map(sc => ({
+            organization_id: activeOrganization.id,
+            name: sc.name,
+            type: sc.type,
+            default_value: 0
+          }));
+          await supabase.from('salary_components').insert(salaryComps);
+        }
+      }
+
       const validInvites = invites.filter(inv => inv.email.trim());
       for (const invite of validInvites) {
         try {
@@ -80,7 +105,7 @@ export const OnboardingWizard = () => {
     }
   };
 
-  const stepLabels = ['Org basics', 'Structure', 'Modules', 'Invite team', 'Done'];
+  const stepLabels = ['Org basics', 'AI Assistant', 'Structure', 'Modules', 'Invite team', 'Done'];
 
   return (
     <div className="min-h-screen bg-surface flex flex-col md:flex-row font-body-md text-on-surface selection:bg-on-surface-variant/30">
@@ -141,6 +166,31 @@ export const OnboardingWizard = () => {
           )}
 
           {step === 2 && (
+            <AISetupAssistant 
+              onSkip={handleNext}
+              onApplyDraft={(draft) => {
+                // Pre-fill Modules
+                if (draft.recommended_modules?.length > 0) {
+                  const draftMods = draft.recommended_modules.map(modName => {
+                    const found = AVAILABLE_MODULES.find(m => modName.toLowerCase().includes(m.id) || m.name.toLowerCase().includes(modName.toLowerCase()));
+                    return found ? found.id : null;
+                  }).filter(Boolean);
+                  setSelectedModules(prev => [...new Set([...prev, ...draftMods])]);
+                }
+
+                // Pre-fill Departments
+                if (draft.suggested_departments?.length > 0) {
+                  setDepartments(prev => [...new Set([...prev, ...draft.suggested_departments.filter(d => d && d !== 'None new')])].filter(d => d !== ''));
+                }
+
+                // Store complex draft items to be saved on finish
+                setDraftData(draft);
+                handleNext();
+              }}
+            />
+          )}
+
+          {step === 3 && (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
               <div>
                 <h1 className="text-3xl font-display-md text-on-surface mb-2 font-bold">Define structure</h1>
@@ -185,7 +235,7 @@ export const OnboardingWizard = () => {
             </div>
           )}
 
-          {step === 3 && (
+          {step === 4 && (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
               <div>
                 <h1 className="text-3xl font-display-md text-on-surface mb-2 font-bold">Choose starter modules</h1>
@@ -221,7 +271,7 @@ export const OnboardingWizard = () => {
             </div>
           )}
 
-          {step === 4 && (
+          {step === 5 && (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
               <div>
                 <h1 className="text-3xl font-display-md text-on-surface mb-2 font-bold">Invite your team</h1>
@@ -269,7 +319,7 @@ export const OnboardingWizard = () => {
             </div>
           )}
 
-          {step === 5 && (
+          {step === 6 && (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
               <div>
                 <h1 className="text-3xl font-display-md text-on-surface mb-2 font-bold">Your workspace is ready</h1>

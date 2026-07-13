@@ -42,9 +42,9 @@ export const EmployeeHome = () => {
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300 pb-24">
       
       {/* "Today" Panel */}
-      <div className="bg-surface-container-lowest border border-outline-variant rounded-sm p-8 flex flex-col md:flex-row justify-between items-center gap-8">
+      <div className="bg-white border border-outline-variant shadow-sm rounded-3xl p-8 flex flex-col md:flex-row justify-between items-center gap-8">
         <div>
-          <h1 className="text-4xl font-display-md font-bold text-on-surface mb-1">{currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</h1>
+          <h1 className="text-4xl font-display-md font-bold text-on-surface mb-1 tracking-tight">{currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</h1>
           <p className="text-on-surface-variant font-body-md text-lg">
             {currentTime.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
           </p>
@@ -57,17 +57,17 @@ export const EmployeeHome = () => {
           <div className="flex flex-col items-center shrink-0">
             <button 
               onClick={() => setClockedIn(!clockedIn)}
-              className={`px-12 py-6 rounded-sm font-medium text-sm shadow-sm transition-all transform hover:scale-[1.02] active:scale-[0.98] border ${
+              className={`px-12 py-6 rounded-2xl font-bold text-sm shadow-sm transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] border ${
                 clockedIn 
-                  ? 'bg-surface-container text-[#E8A23C] border-[#E8A23C]/50 hover:bg-surface-container-high' 
-                  : 'bg-[#E8A23C] text-[#14161A] border-[#E8A23C] hover:bg-[#d69536] shadow-[0_0_16px_rgba(232,162,60,0.4)]'
+                  ? 'bg-error-container text-error border-error/20 hover:bg-error-container/80' 
+                  : 'bg-primary text-white border-primary hover:bg-primary/90 shadow-md shadow-primary/20'
               }`}
             >
               {clockedIn ? 'Clock out' : 'Clock in'}
             </button>
             {clockedIn && (
-              <span className="mt-3 font-mono text-xs text-[#E8A23C] flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#E8A23C] animate-pulse-amber"></span>
+              <span className="mt-3 font-medium text-xs text-primary flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
                 Recording active session
               </span>
             )}
@@ -79,46 +79,50 @@ export const EmployeeHome = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         
         {/* Leave Balance */}
-        <div className="bg-surface-container-lowest border border-outline-variant rounded-sm p-5 relative overflow-hidden group hover:border-outline transition-colors cursor-pointer">
-          <div className="absolute top-0 right-0 w-8 h-8 bg-surface-container flex items-center justify-center rounded-bl-sm border-l border-b border-outline-variant group-hover:bg-outline-variant/20 transition-colors">
-            <span className="material-symbols-outlined text-[14px] text-on-surface-variant">open_in_new</span>
+        <div className="bg-white border border-outline-variant shadow-sm rounded-2xl p-6 relative overflow-hidden group hover:shadow-md transition-all cursor-pointer">
+          <div className="w-10 h-10 rounded-xl bg-[#10B981]/10 text-[#10B981] flex items-center justify-center mb-4">
+            <span className="material-symbols-outlined text-[20px]">beach_access</span>
           </div>
-          <div className="font-medium text-sm text-on-surface-variant mb-4 flex items-center gap-2">
-            <span className="material-symbols-outlined text-[16px]">beach_access</span> Leave balance
+          <div className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center bg-surface-container text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity">
+            <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
           </div>
-          <div className="font-mono text-3xl text-white mb-1">{hasLeave ? '12.5' : '--'}</div>
-          <div className="font-body-md text-xs text-on-surface-variant">Days available</div>
+          <div className="font-display-md text-3xl font-bold text-on-surface mb-1 tracking-tight">{hasLeave ? '12.5' : '--'}</div>
+          <div className="font-medium text-sm text-on-surface-variant">Available leave days</div>
         </div>
 
         {/* Pending Items */}
-        <div className="bg-surface-container-lowest border border-outline-variant rounded-sm p-5 relative overflow-hidden group hover:border-outline transition-colors cursor-pointer">
-          <div className="absolute top-0 right-0 w-8 h-8 bg-surface-container flex items-center justify-center rounded-bl-sm border-l border-b border-outline-variant group-hover:bg-outline-variant/20 transition-colors">
-            <span className="material-symbols-outlined text-[14px] text-on-surface-variant">open_in_new</span>
+        <div className="bg-white border border-outline-variant shadow-sm rounded-2xl p-6 relative overflow-hidden group hover:shadow-md transition-all cursor-pointer">
+          <div className="w-10 h-10 rounded-xl bg-[#F59E0B]/10 text-[#F59E0B] flex items-center justify-center mb-4">
+            <span className="material-symbols-outlined text-[20px]">checklist</span>
           </div>
-          <div className="font-medium text-sm text-on-surface-variant mb-4 flex items-center gap-2">
-            <span className="material-symbols-outlined text-[16px]">checklist</span> Pending items
+          <div className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center bg-surface-container text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity">
+            <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
           </div>
-          <div className="font-mono text-3xl text-white mb-1">2</div>
-          <div className="font-body-md text-xs text-[#E8A23C]">Require your attention</div>
+          <div className="font-display-md text-3xl font-bold text-on-surface mb-1 tracking-tight">2</div>
+          <div className="font-medium text-sm text-[#F59E0B]">Require your attention</div>
         </div>
 
         {/* Recent Notifications */}
-        <div className="bg-surface-container-lowest border border-outline-variant rounded-sm p-5">
+        <div className="bg-white border border-outline-variant shadow-sm rounded-2xl p-6">
           <div className="font-medium text-sm text-on-surface-variant mb-4 flex items-center gap-2">
-            <span className="material-symbols-outlined text-[16px]">notifications</span> Recent alerts
+            <span className="material-symbols-outlined text-[18px]">notifications</span> Recent alerts
           </div>
-          <div className="space-y-3">
-             <div className="flex gap-2 items-start">
-               <span className="w-1.5 h-1.5 rounded-full bg-[#2F9E8F] shrink-0 mt-1.5"></span>
+          <div className="space-y-4">
+             <div className="flex gap-3 items-start">
+               <div className="w-8 h-8 rounded-full bg-[#10B981]/10 text-[#10B981] flex items-center justify-center shrink-0">
+                 <span className="material-symbols-outlined text-[14px]">check</span>
+               </div>
                <div>
-                 <div className="font-body-md font-medium text-[13px] text-white">Expense Report Approved</div>
+                 <div className="font-body-md font-medium text-[13px] text-on-surface">Expense Report Approved</div>
                  <div className="font-body-md text-[11px] text-on-surface-variant mt-0.5">2 hours ago</div>
                </div>
              </div>
-             <div className="flex gap-2 items-start">
-               <span className="w-1.5 h-1.5 rounded-full bg-outline-variant shrink-0 mt-1.5"></span>
+             <div className="flex gap-3 items-start">
+               <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                 <span className="material-symbols-outlined text-[14px]">info</span>
+               </div>
                <div>
-                 <div className="font-body-md font-medium text-[13px] text-white">Policy Update v2.4</div>
+                 <div className="font-body-md font-medium text-[13px] text-on-surface">Policy Update v2.4</div>
                  <div className="font-body-md text-[11px] text-on-surface-variant mt-0.5">Yesterday</div>
                </div>
              </div>
@@ -128,36 +132,38 @@ export const EmployeeHome = () => {
       </div>
 
       {/* My Requests List */}
-      <div className="bg-surface-container-lowest border border-outline-variant rounded-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-outline-variant flex items-center justify-between bg-surface-container">
-           <h2 className="font-medium text-sm text-white">My requests</h2>
-           <button className="text-xs font-medium text-on-surface-variant hover:text-white transition-colors">View all</button>
+      <div className="bg-white border border-outline-variant shadow-sm rounded-2xl overflow-hidden">
+        <div className="px-6 py-4 border-b border-outline-variant flex items-center justify-between">
+           <h2 className="font-display-md font-bold text-lg text-on-surface tracking-tight">My requests</h2>
+           <button className="text-xs font-semibold text-primary hover:text-primary/80 transition-colors bg-primary/5 px-3 py-1.5 rounded-full">View all</button>
         </div>
         <div className="divide-y divide-outline-variant">
            {mockRequests.map(req => {
-             let statusColor = 'text-on-surface-variant border-outline-variant';
-             let dotColor = 'bg-outline-variant';
+             let statusColor = 'text-on-surface-variant bg-surface-container';
+             let icon = 'hourglass_empty';
              if (req.status === 'approved') {
-               statusColor = 'text-[#2F9E8F] border-[#2F9E8F]/30 bg-[#2F9E8F]/10';
-               dotColor = 'bg-[#2F9E8F]';
+               statusColor = 'text-[#10B981] bg-[#10B981]/10';
+               icon = 'check_circle';
              } else if (req.status === 'pending') {
-               statusColor = 'text-[#E8A23C] border-[#E8A23C]/30 bg-[#E8A23C]/10';
-               dotColor = 'bg-[#E8A23C]';
+               statusColor = 'text-[#F59E0B] bg-[#F59E0B]/10';
+               icon = 'schedule';
              } else if (req.status === 'rejected') {
-               statusColor = 'text-[#C4453A] border-[#C4453A]/30 bg-[#C4453A]/10';
-               dotColor = 'bg-[#C4453A]';
+               statusColor = 'text-error bg-error-container';
+               icon = 'cancel';
              }
 
              return (
-               <div key={req.id} className="px-6 py-4 flex items-center justify-between hover:bg-surface-container/50 transition-colors">
+               <div key={req.id} className="px-6 py-4 flex items-center justify-between hover:bg-surface-container/30 transition-colors cursor-pointer group">
                   <div className="flex items-center gap-4">
-                     <span className={`w-1.5 h-1.5 rounded-full ${dotColor}`}></span>
+                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${statusColor}`}>
+                       <span className="material-symbols-outlined text-[20px]">{icon}</span>
+                     </div>
                      <div>
-                       <div className="font-body-md font-medium text-sm text-white mb-0.5">{req.type}</div>
+                       <div className="font-body-md font-medium text-sm text-on-surface mb-0.5 group-hover:text-primary transition-colors">{req.type}</div>
                        <div className="font-body-md text-xs text-on-surface-variant">{req.date}</div>
                      </div>
                   </div>
-                  <div className={`px-2 py-1 border rounded-sm font-medium text-xs capitalize ${statusColor}`}>
+                  <div className={`px-3 py-1 rounded-full font-semibold text-xs capitalize ${statusColor}`}>
                      {req.status}
                   </div>
                </div>
