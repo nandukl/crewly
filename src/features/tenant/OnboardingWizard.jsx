@@ -5,6 +5,7 @@ import { orgService } from '../../lib/orgService';
 import { supabase } from '../../lib/supabaseClient';
 import { ModulePanel } from '../../components/ui/ModulePanel';
 import { AISetupAssistant } from './AISetupAssistant';
+import { INDUSTRY_TEMPLATES } from '../../shared/industryTemplates';
 
 const AVAILABLE_MODULES = [
   { id: 'hr', name: 'HR & directory', icon: 'groups', desc: 'Centralized employee directory, org charts, and core records.' },
@@ -29,6 +30,27 @@ export const OnboardingWizard = () => {
   const [invites, setInvites] = useState([{ email: '', role: 'employee' }]);
   const [departments, setDepartments] = useState(['Engineering', 'Sales', 'HR']);
   const [draftData, setDraftData] = useState(null);
+  const [selectedTemplate, setSelectedTemplate] = useState(null);
+
+  const handleIndustrySelect = (e) => {
+    const tmplKey = e.target.value;
+    if (!tmplKey) {
+      setSelectedTemplate(null);
+      return;
+    }
+    const tmpl = INDUSTRY_TEMPLATES.find(t => t.key === tmplKey);
+    if (tmpl) {
+      setSelectedTemplate(tmpl);
+      setSelectedModules(tmpl.recommended_modules);
+      setDraftData({
+        suggested_leave_types: tmpl.leave_types.map(lt => ({
+          name: lt.name,
+          description: lt.days_per_year ? `${lt.days_per_year} days/year` : 'Flexible'
+        })),
+        suggested_salary_components: tmpl.salary_components
+      });
+    }
+  };
 
   const handleNext = () => setStep(s => s + 1);
 
@@ -240,6 +262,45 @@ export const OnboardingWizard = () => {
               <div>
                 <h1 className="text-3xl font-display-md text-on-surface mb-2 font-bold">Choose starter modules</h1>
                 <p className="text-on-surface-variant font-body-md">Turn on the modules you need.</p>
+              </div>
+
+              <div className="bg-surface-container-lowest border border-outline-variant p-5 rounded-2xl shadow-sm">
+                <label className="block text-sm font-bold text-on-surface mb-2">Not sure where to start? Pick your industry</label>
+                <p className="text-sm text-on-surface-variant mb-4">We'll pre-select the recommended modules, leave policies, and salary structure for your type of business.</p>
+                <select 
+                  className="w-full max-w-md bg-white border border-outline-variant rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-primary shadow-sm"
+                  value={selectedTemplate?.key || ''}
+                  onChange={handleIndustrySelect}
+                >
+                  <option value="">-- Select an industry --</option>
+                  {INDUSTRY_TEMPLATES.map(tmpl => (
+                    <option key={tmpl.key} value={tmpl.key}>{tmpl.label}</option>
+                  ))}
+                </select>
+
+                {selectedTemplate?.known_limitations?.length > 0 && (
+                  <div className="mt-4 bg-surface-container-low border border-outline-variant p-4 rounded-xl space-y-2">
+                    <div className="flex items-center gap-2 text-on-surface font-medium">
+                      <span className="material-symbols-outlined text-[20px] text-on-surface-variant">info</span>
+                      Just so you know
+                    </div>
+                    <ul className="list-disc pl-8 space-y-1 text-sm text-on-surface-variant">
+                      {selectedTemplate.known_limitations.map((limitation, i) => (
+                        <li key={i}>{limitation}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {selectedTemplate && (
+                  <div className="mt-4 text-xs text-on-surface-variant flex items-start gap-1.5">
+                    <span className="material-symbols-outlined text-[14px]">info</span>
+                    <span>
+                      <strong>Note:</strong> We've pre-filled the recommended modules, leave types, and salary structure. 
+                      Department suggestions from this template are skipped because you already set them up in the previous step.
+                    </span>
+                  </div>
+                )}
               </div>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">

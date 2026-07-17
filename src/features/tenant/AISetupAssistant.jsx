@@ -122,6 +122,20 @@ export const AISetupAssistant = ({ onApplyDraft, onSkip, isModal = false }) => {
           </div>
         </div>
 
+        {draft.known_limitations && draft.known_limitations.length > 0 && (
+          <div className="bg-surface-container-low border border-outline-variant p-4 rounded-xl space-y-2">
+            <div className="flex items-center gap-2 text-on-surface font-medium">
+              <span className="material-symbols-outlined text-[20px] text-on-surface-variant">info</span>
+              Just so you know
+            </div>
+            <ul className="list-disc pl-8 space-y-1 text-sm text-on-surface-variant">
+              {draft.known_limitations.map((limitation, i) => (
+                <li key={i}>{limitation}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         <div className="pt-6 border-t border-outline-variant flex items-center justify-between">
           <Button variant="ghost" onClick={() => setDraft(null)}>Back to chat</Button>
           <div className="flex items-center gap-4">
